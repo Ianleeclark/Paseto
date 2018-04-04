@@ -28,8 +28,18 @@ defmodule PasetoTest do
     end
 
     test "assure invalid tokens (bad b64 encoding for payload) fail" do
-      {:error, msg} = Paseto.parse("v1.local.badbase64encoding==.kid=key001")
-      assert msg == "Invalid (non-base64 encoded) payload in token."
+      {:error, retval} = Paseto.parse("v1.local.badbase64encoding==.kid=key001")
+      assert retval == "Invalid (non-base64 encoded) payload in token."
+    end
+
+    test "assure invalid version numbers error out" do
+      {:error, retval} = Paseto.parse("v3.local.dGVzdA==.kid=key001")
+      assert retval == "Invalid token version. Only versions 1 & 2 are supported"
+    end
+
+    test "assure malformed tokens error" do
+      {:error, retval} = Paseto.parse("v3.local")
+      assert retval == "Invalid token encountered during token parsing"
     end
   end
 end

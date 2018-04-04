@@ -22,7 +22,9 @@ defmodule Paseto do
         {:ok, Paseto.V1.from_token(parsed_token)}
       {:ok, %{version: "v2"} = parsed_token} ->
         {:ok, Paseto.V2.from_token(parsed_token)}
-      {:error, reason} = err ->
+      {:ok, %{version: _}} ->
+        {:error, "Invalid token version. Only versions 1 & 2 are supported"}
+      {:error, _} = err ->
         err
     end
   end
