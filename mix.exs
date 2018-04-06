@@ -26,7 +26,7 @@ defmodule Paseto.MixProject do
 
   defp aliases do
     [
-      "testall": ["credo", "test"]
+      testall: ["credo", "test"]
     ]
   end
 end

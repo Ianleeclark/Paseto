@@ -1,4 +1,5 @@
 # Paseto
+[![Build Status](https://travis-ci.org/GrappigPanda/Paseto.svg?branch=master)](https://travis-ci.org/GrappigPanda/Paseto)
 
 **TODO: Add description**
 
