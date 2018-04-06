@@ -20,10 +20,17 @@ defmodule PasetoTest do
     end
 
     test "assure tokens with realistic payloads parse correctly" do
-      {:ok, token} = Paseto.parse("v1.local.eyJ1c2VySWQiOiAiYWVhNDI3N2YtZmY1My00ZTdlLThkYzMtMGVlYzAwZGFiMjA5IiwgInBlcm1pc3Npb25NYXNrIjogMTIzNDEyMzR9.kid=key001")
+      {:ok, token} =
+        Paseto.parse(
+          "v1.local.eyJ1c2VySWQiOiAiYWVhNDI3N2YtZmY1My00ZTdlLThkYzMtMGVlYzAwZGFiMjA5IiwgInBlcm1pc3Npb25NYXNrIjogMTIzNDEyMzR9.kid=key001"
+        )
+
       assert token.version == "v1"
       assert token.purpose == "local"
-      assert token.payload == "{\"userId\": \"aea4277f-ff53-4e7e-8dc3-0eec00dab209\", \"permissionMask\": 12341234}"
+
+      assert token.payload ==
+               "{\"userId\": \"aea4277f-ff53-4e7e-8dc3-0eec00dab209\", \"permissionMask\": 12341234}"
+
       assert token.footer == "kid=key001"
     end
 

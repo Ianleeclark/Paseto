@@ -5,39 +5,43 @@ defmodule Paseto.Utils.Utils do
 
   use Bitwise
 
-  @spec pre_auth_encode([]) :: String.t
-  def pre_auth_encode([]) do
-    "\x00\x00\x00\x00\x00\x00\x00\x00"
-  end
-  def pre_auth_encode(['']) do
-    "\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-  end
-  @spec pre_auth_encode([String.t]) :: String.t
+  @doc """
+  Handles padding multi-part messages before they're sent off to a cryptographic function.
+
+  NOTE: this is currently used in both v1 and v2 protocols.
+  NOTE: There's a 99% chance you're using this library incorrectly if you are calling this function.
+  """
+  @spec pre_auth_encode([String.t()]) :: String.t()
   def pre_auth_encode(pieces) when is_list(pieces) do
-    output = encode_little_endian(Enum.count(pieces))
-    Enum.map(
-      pieces,
-      fn piece ->
-        output <> encode_little_endian(piece) <> piece
-      end
-    )
+    convert(le64(Enum.count(pieces))) <>
+      Enum.into(pieces, <<>>, fn piece ->
+        convert(le64(String.length(piece))) <> Base.encode16(piece)
+      end)
   end
 
-  @spec encode_little_endian(String.t) :: String.t
-  defp encode_little_endian(chunk) do
-    output = ""
-    Enum.map(
-      0..8,
-      fn i ->
-        if i == 7 do
-          n = chunk &&& 127
+  @spec le64(number) :: any
+  defp le64(chunk) do
+    # Performs Little Endian 64 bit encoding
+
+    Enum.into(0..7, <<>>, fn x ->
+      chunk2 =
+        if x == 7 do
+          chunk &&& 127
+        else
+          chunk
         end
 
-        output = output <> (chunk &&& 255)
-        n = chunk >>> 8
-      end
-    )
+      <<chunk2 >>> (x * 8) &&& 255>>
+    end)
+  end
 
-    output
+  @spec convert(binary) :: String.t()
+  defp convert(<<x::8>>) do
+    x |> Integer.to_string(16) |> String.pad_leading(2, "0")
+  end
+
+  @spec convert(binary) :: String.t()
+  defp convert(<<x::8, rest::binary>>) do
+    (x |> Integer.to_string(16) |> String.pad_leading(2, "0")) <> convert(rest)
   end
 end
