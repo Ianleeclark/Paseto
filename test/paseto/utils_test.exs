@@ -13,16 +13,12 @@ defmodule PasetoTest.Utils do
       assert Utils.pre_auth_encode([""]) == "01000000000000000000000000000000"
     end
 
-    test "test string encodes correctly" do
-      assert Utils.pre_auth_encode(["test"]) == "100000000400000000test"
-    end
-
     test "Paragon" do
-      assert Utils.pre_auth_encode(["Paragon"]) == "0100000000000000070000000000000050617261676f6e"
+      assert Utils.pre_auth_encode(["Paragon"]) == "0100000000000000070000000000000050617261676F6E"
     end
 
     test "Two non-empty strings" do
-      assert Utils.pre_auth_encode(["Paragon", "Initiative"]) == "0200000000000000070000000000000050617261676f6e0a00000000000000496e6974696174697665"
+      assert Utils.pre_auth_encode(["Paragon", "Initiative"]) == "0200000000000000070000000000000050617261676F6E0A00000000000000496E6974696174697665"
     end
 
     test "array of two empty strings" do
