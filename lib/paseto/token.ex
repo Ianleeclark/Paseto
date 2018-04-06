@@ -5,7 +5,12 @@ defmodule Paseto.Token do
 
   @typedoc """
   """
-  @type token :: %{version: String.t, purpose: String.t, payload: String.t, footer: nil | String.t}
+  @type token :: %{
+          version: String.t(),
+          purpose: String.t(),
+          payload: String.t(),
+          footer: nil | String.t()
+        }
 
   @required_keys [:version, :purpose, :payload]
   @all_keys @required_keys ++ [:footer]
