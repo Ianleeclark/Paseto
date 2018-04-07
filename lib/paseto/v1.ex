@@ -5,6 +5,7 @@ defmodule Paseto.V1 do
   """
 
   alias Paseto.Token
+  alias Paseto.Utils.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
 
   @required_keys [:version, :purpose, :payload]
@@ -37,7 +38,7 @@ defmodule Paseto.V1 do
   def encrypt(data, key, footer \\ nil) do
     # TODO(ian): Ensure the symmetric key version is supported in v1
 
-    aead_encrypt(data, '#{@header}.local', key, footer)
+    aead_encrypt(data, key, footer)
   end
 
   @spec decrypt(String.t, String.t, String.t | nil) :: String.t
@@ -64,18 +65,18 @@ defmodule Paseto.V1 do
   def generate_symmetric_key do
   end
 
-  @spec aead_encrypt(String.t, String.t, String.t, String.t | nil) :: String.t
-  defp aead_encrypt(plaintext, header, key, footer \\ nil) do
-    h = "#{@header}.local"
+  @spec aead_encrypt(String.t, String.t, String.t | nil) :: String.t
+  defp aead_encrypt(plaintext, key, footer \\ nil) do
+    h = "#{@header}.local."
 
     nonce = get_nonce(plaintext, :crypto.strong_rand_bytes(@nonce_size))
     << leftmost :: size(128), rightmost :: size(128) >> = nonce
-    ek = PasetoCrypto.hkdf_sha384(32, key, leftmost, "paseto-encryption-key")
-    ak = PasetoCrypto.hkdf_sha384(32, key, rightmost, "paseto-auth-key-for-aead")
+    ek = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-encryption-key")
+    ak = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-auth-key-for-aead")
 
-    ciphertext = PasetoCrypto.aes_256_ctr(ek, plaintext, rightmost)
+    ciphertext = PasetoCrypto.aes_256_ctr(ek, plaintext, << rightmost :: 128 >>)
 
-    pre_auth_hash = Utils.pre_auth_encode(h, nonce, ciphertext, footer)
+    pre_auth_hash = Utils.pre_auth_encode([h, nonce, ciphertext, footer])
     |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
     case footer do
@@ -88,18 +89,13 @@ defmodule Paseto.V1 do
   defp aead_decrypt(message, header, key, footer \\ nil) do
   end
 
-  @spec get_nonce(String.t, String.t) :: String.t
-  defp get_nonce(m, n) do
+  @spec get_nonce(String.t, String.t) :: binary
+  def get_nonce(m, n) do
     PasetoCrypto.hmac_sha384(n, m, 32)
   end
 
   @spec get_rsa :: String.t
   defp get_rsa() do
-  end
-
-  # TODO(ian): Do we need this?
-  @spec check_elixir_sec_lib() :: boolean
-  defp check_elixir_sec_lib() do
   end
 
   @spec get_rsa_public_key(String.t) :: String.t

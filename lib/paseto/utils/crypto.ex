@@ -3,9 +3,9 @@ defmodule Paseto.Utils.Crypto do
   """
 
   @spec aes_256_ctr(binary, String.t, binary) :: binary
-  def aes_256_ctr(<< key :: 2048 >>, data, nonce) do
+  def aes_256_ctr(key, data, nonce) do
     {_, ciphertext} = :crypto.stream_init(:aes_ctr, key, nonce)
-    |> :crypto.stream_encrypt(to_string(data))
+    |> :crypto.stream_encrypt(data)
 
     ciphertext
   end
