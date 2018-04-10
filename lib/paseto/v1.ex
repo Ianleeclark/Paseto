@@ -82,8 +82,8 @@ defmodule Paseto.V1 do
     |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
     case footer do
-      nil -> h <> Base.encode64(nonce <> ciphertext <> pre_auth_hash)
-      _ -> h <> Base.encode64(nonce <> ciphertext <> pre_auth_hash) <> "." <> Base.encode64(footer)
+      nil -> h <> Base.url_encode64(nonce <> ciphertext <> pre_auth_hash, padding: false)
+      _ -> h <> Base.url_encode64(nonce <> ciphertext <> pre_auth_hash, padding: false) <> "." <> Base.url_encode64(footer, padding: false)
     end
   end
 
