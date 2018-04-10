@@ -2,12 +2,20 @@ defmodule Paseto.Utils.Crypto do
   @moduledoc """
   """
 
-  @spec aes_256_ctr(binary, String.t, binary) :: binary
-  def aes_256_ctr(key, data, nonce) do
+  @spec aes_256_ctr_encrypt(binary, String.t(), binary) :: binary
+  def aes_256_ctr_encrypt(key, data, nonce) do
     {_, ciphertext} = :crypto.stream_init(:aes_ctr, key, nonce)
     |> :crypto.stream_encrypt(data)
 
     ciphertext
+  end
+
+  @spec aes_256_ctr_decrypt(binary, String.t(), binary) :: binary
+  def aes_256_ctr_decrypt(key, data, nonce) do
+    {_, plaintext} = :crypto.stream_init(:aes_ctr, key, nonce)
+    |> :crypto.stream_decrypt(data)
+
+    plaintext
   end
 
   @doc """

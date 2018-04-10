@@ -8,6 +8,8 @@ defmodule Paseto.V1 do
   alias Paseto.Utils.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
 
+  require Logger
+
   @required_keys [:version, :purpose, :payload]
   @all_keys @required_keys ++ [:footer]
 
@@ -74,7 +76,7 @@ defmodule Paseto.V1 do
     ek = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-encryption-key")
     ak = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-auth-key-for-aead")
 
-    ciphertext = PasetoCrypto.aes_256_ctr(ek, plaintext, << rightmost :: 128 >>)
+    ciphertext = PasetoCrypto.aes_256_ctr_encrypt(ek, plaintext, << rightmost :: 128 >>)
 
     pre_auth_hash = Utils.pre_auth_encode([h, nonce, ciphertext, footer])
     |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
@@ -87,6 +89,37 @@ defmodule Paseto.V1 do
 
   @spec aead_decrypt(String.t, String.t, String.t, String.t | nil) :: String.t
   defp aead_decrypt(message, header, key, footer \\ nil) do
+    expected_len = String.length(header)
+    given_header = String.slice(message, 0..expected_len)
+
+    decoded = case Base64.decode(given_header) do
+      {:ok, decoded_value} ->
+        decoded_value
+      {:error, reason} ->
+        msg = "Failed to decode header #{given_header} during decryption due to #{reason}"
+        Logger.debug(msg)
+        {:error, msg}
+    end
+
+    length = String.length(decoded)
+    nonce = String.slice(decoded, 0..@nonce_size)
+
+    ciphertext = String.slice(decoded, (length - @nonce_size + @mac_size)..length)
+    mac = String.slice(decoded, @nonce_size..(length - @nonce_size + @mac_size))
+
+    << leftmost :: size(128), rightmost :: size(128) >> = nonce
+    ek = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-encryption-key")
+    ak = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-auth-key-for-aead")
+
+    calc = Utils.pre_auth_encode([header, nonce, ciphertext, footer])
+    |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
+
+    retval = if calc == mac do
+      plaintext = " TODO IAN FILL THIS OUT"
+      {:ok, plaintext}
+    else
+      {:error, "Calculated hmac didn't match hmac from token."}
+    end
   end
 
   @spec get_nonce(String.t, String.t) :: binary
