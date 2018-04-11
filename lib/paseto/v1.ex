@@ -59,7 +59,8 @@ defmodule Paseto.V1 do
   iex> Paseto.V1.decrypt(token, "Test Key")
   {:ok, "This is a test message"}
   """
-  @spec decrypt(String.t(), String.t(), String.t() | nil) :: {:ok, String.t()} | {:error, String.t()}
+  @spec decrypt(String.t(), String.t(), String.t() | nil) ::
+          {:ok, String.t()} | {:error, String.t()}
   def decrypt(data, key, footer \\ "") do
     aead_decrypt(data, "v1.local.", key, footer)
   end
@@ -68,7 +69,8 @@ defmodule Paseto.V1 do
   def sign(data, key, footer \\ nil) do
   end
 
-  @spec decrypt(String.t(), String.t(), String.t() | nil) :: {:ok, String.t()} | {:error, String.t()}
+  @spec decrypt(String.t(), String.t(), String.t() | nil) ::
+          {:ok, String.t()} | {:error, String.t()}
   def verify(signed_message, key, footer \\ nil) do
   end
 
@@ -151,19 +153,18 @@ defmodule Paseto.V1 do
       |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
-    retval =
-      if calc == <<mac::384>> do
-        plaintext =
-          PasetoCrypto.aes_256_ctr_decrypt(
-            ek,
-            <<ciphertext::size(ciphertext_len)>>,
-            <<rightmost::128>>
-          )
+    if calc == <<mac::384>> do
+      plaintext =
+        PasetoCrypto.aes_256_ctr_decrypt(
+          ek,
+          <<ciphertext::size(ciphertext_len)>>,
+          <<rightmost::128>>
+        )
 
-        {:ok, plaintext}
-      else
-        {:error, "Calculated hmac didn't match hmac from token."}
-      end
+      {:ok, plaintext}
+    else
+      {:error, "Calculated hmac didn't match hmac from token."}
+    end
   end
 
   @spec get_nonce(String.t(), String.t()) :: binary

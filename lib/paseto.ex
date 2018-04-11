@@ -19,10 +19,10 @@ defmodule Paseto do
   def parse(token) do
     case parse_token(token) do
       {:ok, %{version: "v1"} = parsed_token} ->
-        {:ok, Paseto.V1.from_token(parsed_token)}
+        {:ok, V1.from_token(parsed_token)}
 
       {:ok, %{version: "v2"} = parsed_token} ->
-        {:ok, Paseto.V2.from_token(parsed_token)}
+        {:ok, V2.from_token(parsed_token)}
 
       {:ok, %{version: _}} ->
         {:error, "Invalid token version. Only versions 1 & 2 are supported"}
