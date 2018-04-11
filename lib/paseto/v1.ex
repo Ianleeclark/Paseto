@@ -4,6 +4,8 @@ defmodule Paseto.V1 do
   The Version1 implementation of the Paseto protocol.
   """
 
+  @behaviour Paseto.VersionBehaviour
+
   alias Paseto.Token
   alias Paseto.Utils.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
@@ -83,7 +85,7 @@ defmodule Paseto.V1 do
   end
 
   @spec aead_encrypt(String.t(), String.t(), String.t() | nil) :: String.t()
-  defp aead_encrypt(plaintext, key, footer \\ "") do
+  defp aead_encrypt(plaintext, key, footer) do
     h = "#{@header}.local."
 
     nonce = get_nonce(plaintext, :crypto.strong_rand_bytes(@nonce_size))
@@ -110,7 +112,7 @@ defmodule Paseto.V1 do
   end
 
   @spec aead_decrypt(String.t(), String.t(), String.t(), String.t() | nil) :: String.t()
-  defp aead_decrypt(message, header, key, footer \\ "") do
+  defp aead_decrypt(message, header, key, footer) do
     expected_len = String.length(header)
     given_header = String.slice(message, 0..(expected_len - 1))
 
