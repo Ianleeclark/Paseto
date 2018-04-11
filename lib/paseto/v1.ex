@@ -117,14 +117,16 @@ defmodule Paseto.V1 do
   defp aead_decrypt(message, header, key, footer \\ "") do
     expected_len = String.length(header)
     given_header = String.slice(message, 0..(expected_len - 1))
-    footer_len = case footer do
-                   "" -> 0
-                   _ -> byte_size(footer) + 1 + 1
-                 end
+
+    footer_len =
+      case footer do
+        "" -> 0
+        _ -> byte_size(footer) + 1 + 1
+      end
 
     decoded =
       case Base.url_decode64(
-            String.slice(message, expected_len..(String.length(message) - footer_len)),
+             String.slice(message, expected_len..(String.length(message) - footer_len)),
              padding: false
            ) do
         {:ok, decoded_value} ->
@@ -147,7 +149,7 @@ defmodule Paseto.V1 do
     ak = HKDF.derive(:sha384, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
 
     calc =
-      [header, {nonce, @nonce_size*8}, {ciphertext, ciphertext_len}, footer]
+      [header, {nonce, @nonce_size * 8}, {ciphertext, ciphertext_len}, footer]
       |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
