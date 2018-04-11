@@ -1,6 +1,5 @@
 defmodule Paseto.Utils.Crypto do
-  @moduledoc """
-  """
+  @moduledoc false
 
   @spec aes_256_ctr_encrypt(binary, String.t(), binary) :: binary
   def aes_256_ctr_encrypt(key, data, nonce) when is_binary(nonce) do

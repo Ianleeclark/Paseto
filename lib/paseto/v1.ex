@@ -38,8 +38,6 @@ defmodule Paseto.V1 do
 
   @spec encrypt(String.t(), String.t(), nil | String.t()) :: String.t()
   def encrypt(data, key, footer \\ "") do
-    # TODO(ian): Ensure the symmetric key version is supported in v1
-
     aead_encrypt(data, key, footer)
   end
 
@@ -80,7 +78,8 @@ defmodule Paseto.V1 do
     ciphertext = PasetoCrypto.aes_256_ctr_encrypt(ek, plaintext, <<rightmost::128>>)
 
     pre_auth_hash =
-      Utils.pre_auth_encode([h, nonce, ciphertext, footer])
+      [h, nonce, ciphertext, footer]
+      |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
     case footer do
@@ -123,7 +122,8 @@ defmodule Paseto.V1 do
     ak = HKDF.derive(:sha384, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
 
     calc =
-      Utils.pre_auth_encode([header, {nonce, 256}, {ciphertext, ciphertext_len}, footer])
+      [header, {nonce, 256}, {ciphertext, ciphertext_len}, footer]
+      |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
     retval =

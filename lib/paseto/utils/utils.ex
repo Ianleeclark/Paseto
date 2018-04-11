@@ -1,7 +1,5 @@
 defmodule Paseto.Utils.Utils do
-  @moduledoc """
-  Miscellaneous functions used by several parts of the codebase
-  """
+  @moduledoc false
 
   use Bitwise
 
