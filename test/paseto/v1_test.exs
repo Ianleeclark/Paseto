@@ -18,7 +18,7 @@ defmodule PasetoTest.V1 do
       require Logger
       Logger.debug(result)
 
-      assert V1.decrypt(result, key) == message
+      assert V1.decrypt(result, key) == {:ok, message}
     end
   end
 

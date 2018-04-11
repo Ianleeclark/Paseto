@@ -81,10 +81,6 @@ defmodule Paseto.V1 do
 
     pre_auth_hash = Utils.pre_auth_encode([h, nonce, ciphertext, footer])
     |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
-    Logger.debug("Ciphertext: #{Hexate.encode(ciphertext)}")
-    Logger.debug("Mac: #{Hexate.encode(pre_auth_hash)}")
-    Logger.debug("Leftmost: #{Hexate.encode(leftmost)}")
-    Logger.debug("Hash: #{Utils.pre_auth_encode([h, nonce, ciphertext, footer])}")
 
     case footer do
       "" -> h <> Base.url_encode64(nonce <> ciphertext <> pre_auth_hash, padding: false)
@@ -109,20 +105,17 @@ defmodule Paseto.V1 do
     length = byte_size(decoded)
     ciphertext_len = (length - @nonce_size - @mac_size) * 8
 
-    << leftmost :: 128, rightmost :: 128, ciphertext :: size(ciphertext_len), mac :: 384 >> = decoded
+    << nonce :: 256, ciphertext :: size(ciphertext_len), mac :: 384 >> = decoded
+    << leftmost :: 128, rightmost :: 128 >> = << nonce :: 256 >>
 
     ek = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-encryption-key")
     ak = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-auth-key-for-aead")
-    Logger.debug("Ciphertext: #{Hexate.encode(ciphertext)}")
-    Logger.debug("Mac: #{Hexate.encode(mac)}")
-    Logger.debug("Leftmost: #{Hexate.encode(leftmost)}")
-    Logger.debug("Hash: #{Utils.pre_auth_encode([header, << leftmost :: 128, rightmost :: 128 >>, ciphertext, footer])}")
 
-    calc = Utils.pre_auth_encode([header, << leftmost :: 128, rightmost :: 128 >>, ciphertext, footer])
+    calc = Utils.pre_auth_encode([header, {nonce, 256}, {ciphertext, ciphertext_len}, footer])
     |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
-    retval = if calc == mac do
-      plaintext = " TODO IAN FILL THIS OUT"
+    retval = if calc == << mac :: 384 >> do
+      plaintext = PasetoCrypto.aes_256_ctr_decrypt(ek, << ciphertext :: size(ciphertext_len) >>, << rightmost :: 128 >>)
       {:ok, plaintext}
     else
       {:error, "Calculated hmac didn't match hmac from token."}

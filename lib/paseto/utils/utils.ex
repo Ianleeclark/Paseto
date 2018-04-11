@@ -15,12 +15,17 @@ defmodule Paseto.Utils.Utils do
   def pre_auth_encode(pieces) when is_list(pieces) do
     convert(le64(Enum.count(pieces))) <>
       Enum.into(pieces, <<>>, fn piece ->
-        convert(le64(String.length(piece))) <> Base.encode16(piece)
+        case piece do
+          {piece_msg, size_in_bytes} ->
+            convert(le64(round(size_in_bytes / 8))) <> Base.encode16(<< piece_msg :: size(size_in_bytes)>>)
+          piece ->
+            convert(le64(byte_size(piece))) <> Base.encode16(piece)
+        end
       end)
   end
 
   @spec le64(number) :: any
-  defp le64(chunk) do
+  def le64(chunk) do
     # Performs Little Endian 64 bit encoding
 
     Enum.into(0..7, <<>>, fn x ->
@@ -36,12 +41,12 @@ defmodule Paseto.Utils.Utils do
   end
 
   @spec convert(binary) :: String.t()
-  defp convert(<<x::8>>) do
+  def convert(<<x::8>>) do
     x |> Integer.to_string(16) |> String.pad_leading(2, "0")
   end
 
   @spec convert(binary) :: String.t()
-  defp convert(<<x::8, rest::binary>>) do
+  def convert(<<x::8, rest::binary>>) do
     (x |> Integer.to_string(16) |> String.pad_leading(2, "0")) <> convert(rest)
   end
 end
