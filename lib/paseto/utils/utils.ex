@@ -17,7 +17,9 @@ defmodule Paseto.Utils.Utils do
       Enum.into(pieces, <<>>, fn piece ->
         case piece do
           {piece_msg, size_in_bytes} ->
-            convert(le64(round(size_in_bytes / 8))) <> Base.encode16(<< piece_msg :: size(size_in_bytes)>>)
+            convert(le64(round(size_in_bytes / 8))) <>
+              Base.encode16(<<piece_msg::size(size_in_bytes)>>)
+
           piece ->
             convert(le64(byte_size(piece))) <> Base.encode16(piece)
         end

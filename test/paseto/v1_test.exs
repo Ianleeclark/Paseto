@@ -15,9 +15,6 @@ defmodule PasetoTest.V1 do
       key = "TEST KEY"
       result = V1.encrypt(message, key)
 
-      require Logger
-      Logger.debug(result)
-
       assert V1.decrypt(result, key) == {:ok, message}
     end
   end
