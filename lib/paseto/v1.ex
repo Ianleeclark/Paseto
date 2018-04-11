@@ -4,6 +4,8 @@ defmodule Paseto.V1 do
   The Version1 implementation of the Paseto protocol.
   """
 
+  @behaviour Paseto.VersionBehaviour
+
   alias Paseto.Token
   alias Paseto.Utils.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
@@ -17,10 +19,6 @@ defmodule Paseto.V1 do
   defstruct @all_keys
 
   @header 'v1'
-  @cipher_mode 'aes-256-ctr'
-  @hash_algo 'sha384'
-
-  @symmetric_key_bytes 32
 
   @nonce_size 32
   @mac_size 48
@@ -46,7 +44,7 @@ defmodule Paseto.V1 do
   iex> Paseto.V1.encrypt("This is a test message", "Test Key")
   "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
   """
-  @spec encrypt(String.t(), String.t(), nil | String.t()) :: String.t() | {:error, String.t()}
+  @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
   def encrypt(data, key, footer \\ "") do
     aead_encrypt(data, key, footer)
   end
@@ -61,7 +59,8 @@ defmodule Paseto.V1 do
   iex> Paseto.V1.decrypt(token, "Test Key")
   {:ok, "This is a test message"}
   """
-  @spec decrypt(String.t(), String.t(), String.t() | nil) :: String.t()
+  @spec decrypt(String.t(), String.t(), String.t() | nil) ::
+          {:ok, String.t()} | {:error, String.t()}
   def decrypt(data, key, footer \\ "") do
     aead_decrypt(data, "v1.local.", key, footer)
   end
@@ -70,7 +69,8 @@ defmodule Paseto.V1 do
   def sign(data, key, footer \\ nil) do
   end
 
-  @spec decrypt(String.t(), String.t(), String.t() | nil) :: String.t()
+  @spec decrypt(String.t(), String.t(), String.t() | nil) ::
+          {:ok, String.t()} | {:error, String.t()}
   def verify(signed_message, key, footer \\ nil) do
   end
 
@@ -87,7 +87,7 @@ defmodule Paseto.V1 do
   end
 
   @spec aead_encrypt(String.t(), String.t(), String.t() | nil) :: String.t()
-  defp aead_encrypt(plaintext, key, footer \\ "") do
+  defp aead_encrypt(plaintext, key, footer) do
     h = "#{@header}.local."
 
     nonce = get_nonce(plaintext, :crypto.strong_rand_bytes(@nonce_size))
@@ -114,7 +114,7 @@ defmodule Paseto.V1 do
   end
 
   @spec aead_decrypt(String.t(), String.t(), String.t(), String.t() | nil) :: String.t()
-  defp aead_decrypt(message, header, key, footer \\ "") do
+  defp aead_decrypt(message, header, key, footer) do
     expected_len = String.length(header)
     given_header = String.slice(message, 0..(expected_len - 1))
 
@@ -153,19 +153,18 @@ defmodule Paseto.V1 do
       |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
-    retval =
-      if calc == <<mac::384>> do
-        plaintext =
-          PasetoCrypto.aes_256_ctr_decrypt(
-            ek,
-            <<ciphertext::size(ciphertext_len)>>,
-            <<rightmost::128>>
-          )
+    if calc == <<mac::384>> do
+      plaintext =
+        PasetoCrypto.aes_256_ctr_decrypt(
+          ek,
+          <<ciphertext::size(ciphertext_len)>>,
+          <<rightmost::128>>
+        )
 
-        {:ok, plaintext}
-      else
-        {:error, "Calculated hmac didn't match hmac from token."}
-      end
+      {:ok, plaintext}
+    else
+      {:error, "Calculated hmac didn't match hmac from token."}
+    end
   end
 
   @spec get_nonce(String.t(), String.t()) :: binary
