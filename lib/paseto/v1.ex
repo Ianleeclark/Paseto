@@ -37,14 +37,15 @@ defmodule Paseto.V1 do
   end
 
   @spec encrypt(String.t, String.t, nil | String.t) :: String.t
-  def encrypt(data, key, footer \\ nil) do
+  def encrypt(data, key, footer \\ "") do
     # TODO(ian): Ensure the symmetric key version is supported in v1
 
     aead_encrypt(data, key, footer)
   end
 
   @spec decrypt(String.t, String.t, String.t | nil) :: String.t
-  def decrypt(data, key, footer \\ nil) do
+  def decrypt(data, key, footer \\ "") do
+    aead_decrypt(data, "v1.local.", key, footer)
   end
 
   @spec decrypt(String.t, String.t, String.t | nil) :: String.t
@@ -68,7 +69,7 @@ defmodule Paseto.V1 do
   end
 
   @spec aead_encrypt(String.t, String.t, String.t | nil) :: String.t
-  defp aead_encrypt(plaintext, key, footer \\ nil) do
+  defp aead_encrypt(plaintext, key, footer \\ "") do
     h = "#{@header}.local."
 
     nonce = get_nonce(plaintext, :crypto.strong_rand_bytes(@nonce_size))
@@ -80,19 +81,23 @@ defmodule Paseto.V1 do
 
     pre_auth_hash = Utils.pre_auth_encode([h, nonce, ciphertext, footer])
     |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
+    Logger.debug("Ciphertext: #{Hexate.encode(ciphertext)}")
+    Logger.debug("Mac: #{Hexate.encode(pre_auth_hash)}")
+    Logger.debug("Leftmost: #{Hexate.encode(leftmost)}")
+    Logger.debug("Hash: #{Utils.pre_auth_encode([h, nonce, ciphertext, footer])}")
 
     case footer do
-      nil -> h <> Base.url_encode64(nonce <> ciphertext <> pre_auth_hash, padding: false)
+      "" -> h <> Base.url_encode64(nonce <> ciphertext <> pre_auth_hash, padding: false)
       _ -> h <> Base.url_encode64(nonce <> ciphertext <> pre_auth_hash, padding: false) <> "." <> Base.url_encode64(footer, padding: false)
     end
   end
 
   @spec aead_decrypt(String.t, String.t, String.t, String.t | nil) :: String.t
-  defp aead_decrypt(message, header, key, footer \\ nil) do
+  defp aead_decrypt(message, header, key, footer \\ "") do
     expected_len = String.length(header)
-    given_header = String.slice(message, 0..expected_len)
+    given_header = String.slice(message, 0..(expected_len - 1))
 
-    decoded = case Base64.decode(given_header) do
+    decoded = case Base.url_decode64(String.slice(message, expected_len..(String.length(message))), padding: false) do
       {:ok, decoded_value} ->
         decoded_value
       {:error, reason} ->
@@ -101,17 +106,19 @@ defmodule Paseto.V1 do
         {:error, msg}
     end
 
-    length = String.length(decoded)
-    nonce = String.slice(decoded, 0..@nonce_size)
+    length = byte_size(decoded)
+    ciphertext_len = (length - @nonce_size - @mac_size) * 8
 
-    ciphertext = String.slice(decoded, (length - @nonce_size + @mac_size)..length)
-    mac = String.slice(decoded, @nonce_size..(length - @nonce_size + @mac_size))
+    << leftmost :: 128, rightmost :: 128, ciphertext :: size(ciphertext_len), mac :: 384 >> = decoded
 
-    << leftmost :: size(128), rightmost :: size(128) >> = nonce
     ek = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-encryption-key")
     ak = HKDF.derive(:sha384, key, 32, << leftmost :: 128 >>, "paseto-auth-key-for-aead")
+    Logger.debug("Ciphertext: #{Hexate.encode(ciphertext)}")
+    Logger.debug("Mac: #{Hexate.encode(mac)}")
+    Logger.debug("Leftmost: #{Hexate.encode(leftmost)}")
+    Logger.debug("Hash: #{Utils.pre_auth_encode([header, << leftmost :: 128, rightmost :: 128 >>, ciphertext, footer])}")
 
-    calc = Utils.pre_auth_encode([header, nonce, ciphertext, footer])
+    calc = Utils.pre_auth_encode([header, << leftmost :: 128, rightmost :: 128 >>, ciphertext, footer])
     |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
     retval = if calc == mac do
