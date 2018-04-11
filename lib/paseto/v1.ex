@@ -26,6 +26,9 @@ defmodule Paseto.V1 do
   @mac_size 48
   @sign_size 256
 
+  @doc """
+  Takes a token and will decrypt/verify the signature and return the token in a more digestable manner
+  """
   @spec from_token(%Token{}) :: %__MODULE__{}
   def from_token(token) do
     %__MODULE__{
@@ -36,11 +39,28 @@ defmodule Paseto.V1 do
     }
   end
 
-  @spec encrypt(String.t(), String.t(), nil | String.t()) :: String.t()
+  @doc """
+  Handles encrypting the payload and returning a valid token
+
+  Examples:
+  iex> Paseto.V1.encrypt("This is a test message", "Test Key")
+  "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
+  """
+  @spec encrypt(String.t(), String.t(), nil | String.t()) :: String.t() | {:error, String.t()}
   def encrypt(data, key, footer \\ "") do
     aead_encrypt(data, key, footer)
   end
 
+  @doc """
+  Handles decrypting a token given the correct key
+
+  Examples:
+  iex> token = Paseto.V1.encrypt("This is a test message", "Test Key")
+  iex> token
+  "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
+  iex> Paseto.V1.decrypt(token, "Test Key")
+  {:ok, "This is a test message"}
+  """
   @spec decrypt(String.t(), String.t(), String.t() | nil) :: String.t()
   def decrypt(data, key, footer \\ "") do
     aead_decrypt(data, "v1.local.", key, footer)
@@ -97,10 +117,14 @@ defmodule Paseto.V1 do
   defp aead_decrypt(message, header, key, footer \\ "") do
     expected_len = String.length(header)
     given_header = String.slice(message, 0..(expected_len - 1))
+    footer_len = case footer do
+                   "" -> 0
+                   _ -> byte_size(footer) + 1 + 1
+                 end
 
     decoded =
       case Base.url_decode64(
-             String.slice(message, expected_len..String.length(message)),
+            String.slice(message, expected_len..(String.length(message) - footer_len)),
              padding: false
            ) do
         {:ok, decoded_value} ->
@@ -114,6 +138,7 @@ defmodule Paseto.V1 do
 
     length = byte_size(decoded)
     ciphertext_len = (length - @nonce_size - @mac_size) * 8
+    footer = Base.url_decode64!(footer)
 
     <<nonce::256, ciphertext::size(ciphertext_len), mac::384>> = decoded
     <<leftmost::128, rightmost::128>> = <<nonce::256>>
@@ -122,7 +147,7 @@ defmodule Paseto.V1 do
     ak = HKDF.derive(:sha384, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
 
     calc =
-      [header, {nonce, 256}, {ciphertext, ciphertext_len}, footer]
+      [header, {nonce, @nonce_size*8}, {ciphertext, ciphertext_len}, footer]
       |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
@@ -142,7 +167,7 @@ defmodule Paseto.V1 do
   end
 
   @spec get_nonce(String.t(), String.t()) :: binary
-  def get_nonce(m, n) do
+  defp get_nonce(m, n) do
     PasetoCrypto.hmac_sha384(n, m, 32)
   end
 

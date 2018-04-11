@@ -25,7 +25,7 @@ defmodule Paseto.Utils.Utils do
   end
 
   @spec le64(number) :: any
-  def le64(chunk) do
+  defp le64(chunk) do
     # Performs Little Endian 64 bit encoding
 
     Enum.into(0..7, <<>>, fn x ->
@@ -41,12 +41,12 @@ defmodule Paseto.Utils.Utils do
   end
 
   @spec convert(binary) :: String.t()
-  def convert(<<x::8>>) do
+  defp convert(<<x::8>>) do
     x |> Integer.to_string(16) |> String.pad_leading(2, "0")
   end
 
   @spec convert(binary) :: String.t()
-  def convert(<<x::8, rest::binary>>) do
+  defp convert(<<x::8, rest::binary>>) do
     (x |> Integer.to_string(16) |> String.pad_leading(2, "0")) <> convert(rest)
   end
 end
