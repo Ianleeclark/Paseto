@@ -1,7 +1,5 @@
 defmodule Paseto.Utils.Utils do
-  @moduledoc """
-  Miscellaneous functions used by several parts of the codebase
-  """
+  @moduledoc false
 
   use Bitwise
 
@@ -15,7 +13,14 @@ defmodule Paseto.Utils.Utils do
   def pre_auth_encode(pieces) when is_list(pieces) do
     convert(le64(Enum.count(pieces))) <>
       Enum.into(pieces, <<>>, fn piece ->
-        convert(le64(String.length(piece))) <> Base.encode16(piece)
+        case piece do
+          {piece_msg, size_in_bytes} ->
+            convert(le64(round(size_in_bytes / 8))) <>
+              Base.encode16(<<piece_msg::size(size_in_bytes)>>)
+
+          piece ->
+            convert(le64(byte_size(piece))) <> Base.encode16(piece)
+        end
       end)
   end
 
