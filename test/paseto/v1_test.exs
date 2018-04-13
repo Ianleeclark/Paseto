@@ -30,7 +30,7 @@ defmodule PasetoTest.V1 do
       signed_token = V1.sign(message, sk)
       payload = String.replace(signed_token, "v1.public.", "")
 
-      assert V1.verify("v1.public.", payload, pk) == message
+      assert V1.verify("v1.public.", payload, pk) == {:ok, message}
     end
 
     test "Invalid PK fails to verify, footerless" do
@@ -62,7 +62,7 @@ defmodule PasetoTest.V1 do
       payload = String.replace(signed_token, "v1.public.", "")
       [_, _, payload, _] = String.split(signed_token, ".")
 
-      assert V1.verify("v1.public.", payload, pk, footer) == message
+      assert V1.verify("v1.public.", payload, pk, footer) == {:ok, message}
     end
   end
 end

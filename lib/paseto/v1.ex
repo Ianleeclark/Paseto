@@ -96,35 +96,22 @@ defmodule Paseto.V1 do
   Examples:
 
   """
-  @spec verify(String.t(), String.t(), String.t() | nil) :: :ok | {:error, String.t()}
+  @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
   def verify(header, signed_message, key, footer \\ "") do
-    # TODO(ian): Handle error here
-    case footer do
-      "" -> :ok
-      _ ->
-        # TODO(ian): Match the footer to what's appended to the message
-    end
+    with  :ok <- valid_header?(:verify, header),
+         {:ok, decoded} <- valid_b64?(:decode, signed_message)
+    do
+      message_size = (byte_size(decoded) - (@signature_size / 8)) * 8 |> round
+      << message :: size(message_size), signature :: size(@signature_size) >> = decoded
 
-    # TODO(ian): Handle error
-    case String.equivalent?(header, "#{@header}.public") do
-      true -> :ok
-      false -> {:error, "Token doesn't start with correct header"}
-    end
+      m2 = Utils.pre_auth_encode([header, << message :: size(message_size) >>, footer])
 
-    # TODO(ian): Handle error
-    decoded = case b64_decode(signed_message) do
-      {:ok, decoded} -> decoded
-      _ -> {:error, "Invalid payload. Payload was not b64 encoded."}
-    end
-
-    message_size = (byte_size(decoded) - (@signature_size / 8)) * 8 |> round
-    << message :: size(message_size), signature :: size(@signature_size) >> = decoded
-
-    m2 = Utils.pre_auth_encode([header, << message :: size(message_size) >>, footer])
-
-    case :crypto.verify(:rsa, @hash_algo, m2, << signature :: size(@signature_size) >>, key) do
-      true -> << message :: size(message_size) >>
-      false -> {:error, "Failed to verify signature."}
+      case :crypto.verify(:rsa, @hash_algo, m2, << signature :: size(@signature_size) >>, key) do
+        true -> {:ok, << message :: size(message_size) >>}
+        false -> {:error, "Failed to verify signature."}
+      end
+    else
+      {:error, _reason} = err -> err
     end
   end
 
@@ -219,4 +206,28 @@ defmodule Paseto.V1 do
 
   @spec b64_decode(binary) :: binary
   defp b64_decode!(input) when is_binary(input), do: Base.url_decode64!(input, padding: false)
+
+  @spec valid_b64?(atom(), binary) :: {:ok, binary} | {:error, String.t()}
+  defp valid_b64?(:decode, input) do
+    case b64_decode(input) do
+      {:ok, _decoded} = retval -> retval
+      _ -> {:error, "Invalid payload. Payload was not b64 encoded."}
+    end
+  end
+
+  @spec valid_header?(:verify, String.t()) :: :ok | {:error, String.t()}
+  defp valid_header?(:verify, header) do
+    case String.equivalent?(header, "#{@header}.public.") do
+      true -> :ok
+      false -> {:error, "Token doesn't start with correct header"}
+    end
+  end
+
+  @spec valid_header?(:decrypt, String.t()) :: :ok | {:error, String.t()}
+  defp valid_header?(:decrypt, header) do
+      case String.equivalent?(header, "#{@header}.local") do
+        true -> :ok
+        false -> {:error, "Token doesn't start with correct header"}
+      end
+  end
 end
