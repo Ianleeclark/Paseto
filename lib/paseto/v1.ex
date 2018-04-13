@@ -76,14 +76,13 @@ defmodule Paseto.V1 do
       :rsa,
       @hash_algo,
       m2,
-      secret_key
+      secret_key,
+      [
+        # TODO(ian): This options subtly fucked somehow
+        # {:rsa_pad, :rsa_pkcs1_pss_padding},
+        {:rsa_mgf1_md, @hash_algo}
+      ]
     )
-
-    # TODO(ian): Re-enable following in crypto.sign
-    # [
-    #   # {:rsa_pad, :rsa_pkcs1_pss_padding},
-    #   # {:rsa_mgf1_md, @hash_algo}
-    # ]
 
     case footer do
       "" -> h <> b64_encode(data <> signature)
@@ -99,24 +98,32 @@ defmodule Paseto.V1 do
   """
   @spec verify(String.t(), String.t(), String.t() | nil) :: :ok | {:error, String.t()}
   def verify(header, signed_message, key, footer \\ "") do
+    # TODO(ian): Handle error here
     case footer do
       "" -> :ok
       _ ->
         # TODO(ian): Match the footer to what's appended to the message
     end
 
+    # TODO(ian): Handle error
     case String.equivalent?(header, "#{@header}.public") do
       true -> :ok
       false -> {:error, "Token doesn't start with correct header"}
     end
 
-    message_size = byte_size(signed_message) - (@signature_size / 8)
-    << message :: size(message_size), signature :: size(@signature_size) >> = signed_message
+    # TODO(ian): Handle error
+    decoded = case b64_decode(signed_message) do
+      {:ok, decoded} -> decoded
+      _ -> {:error, "Invalid payload. Payload was not b64 encoded."}
+    end
+
+    message_size = (byte_size(decoded) - (@signature_size / 8)) * 8 |> round
+    << message :: size(message_size), signature :: size(@signature_size) >> = decoded
 
     m2 = Utils.pre_auth_encode([header, << message :: size(message_size) >>, footer])
 
     case :crypto.verify(:rsa, @hash_algo, m2, << signature :: size(@signature_size) >>, key) do
-      true -> message
+      true -> << message :: size(message_size) >>
       false -> {:error, "Failed to verify signature."}
     end
   end

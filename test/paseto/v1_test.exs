@@ -25,6 +25,25 @@ defmodule PasetoTest.V1 do
 
   describe "Sign/Verify tests" do
     test "Simple sign/verify, footerless" do
+      message = "Test Message"
+      {pk, sk} = :crypto.generate_key(:rsa, {2048, 65537})
+      signed_token = V1.sign(message, sk)
+      payload = String.replace(signed_token, "v1.public.", "")
+
+      assert V1.verify("v1.public.", payload, pk) == message
+    end
+
+    test "Invalid PK fails to verify, footerless" do
+      message = "Test Message"
+      {_pk1, sk1} = :crypto.generate_key(:rsa, {2048, 65537})
+      {pk2, _sk2} = :crypto.generate_key(:rsa, {2048, 65537})
+      signed_token = V1.sign(message, sk1)
+      payload = String.replace(signed_token, "v1.public.", "")
+
+      assert V1.verify("v1.public.", payload, pk2) == {:error, "Failed to verify signature."}
+    end
+
+    test "Invalid PK fails to verify, with footer" do
     end
 
     test "Simple sign/verify, with footer" do
