@@ -78,8 +78,7 @@ defmodule Paseto.V1 do
       m2,
       secret_key,
       [
-        # TODO(ian): This options subtly fucked somehow
-        # {:rsa_pad, :rsa_pkcs1_pss_padding},
+        {:rsa_padding, :rsa_pkcs1_pss_padding},
         {:rsa_mgf1_md, @hash_algo}
       ]
     )
@@ -93,8 +92,6 @@ defmodule Paseto.V1 do
   @doc """
   Handles verifying the signature belongs to the provided key.
 
-  Examples:
-
   """
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
   def verify(header, signed_message, key, footer \\ "") do
@@ -106,7 +103,17 @@ defmodule Paseto.V1 do
 
       m2 = Utils.pre_auth_encode([header, << message :: size(message_size) >>, footer])
 
-      case :crypto.verify(:rsa, @hash_algo, m2, << signature :: size(@signature_size) >>, key) do
+      case :crypto.verify(
+            :rsa,
+            @hash_algo,
+            m2,
+            << signature :: size(@signature_size) >>,
+            key,
+            [
+              {:rsa_padding, :rsa_pkcs1_pss_padding},
+              {:rsa_mgf1_md, @hash_algo}
+            ]
+          ) do
         true -> {:ok, << message :: size(message_size) >>}
         false -> {:error, "Failed to verify signature."}
       end

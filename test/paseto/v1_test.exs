@@ -33,6 +33,17 @@ defmodule PasetoTest.V1 do
       assert V1.verify("v1.public.", payload, pk) == {:ok, message}
     end
 
+    test "Simple sign/verify, with footer" do
+      message = "Test Message"
+      footer = "key-id:533434"
+      {pk, sk} = :crypto.generate_key(:rsa, {2048, 65537})
+      signed_token = V1.sign(message, sk, footer)
+      payload = String.replace(signed_token, "v1.public.", "")
+      [_, _, payload, _] = String.split(signed_token, ".")
+
+      assert V1.verify("v1.public.", payload, pk, footer) == {:ok, message}
+    end
+
     test "Invalid PK fails to verify, footerless" do
       message = "Test Message"
       {_pk1, sk1} = :crypto.generate_key(:rsa, {2048, 65537})
@@ -52,17 +63,6 @@ defmodule PasetoTest.V1 do
       payload = String.replace(signed_token, "v1.public.", "")
 
       assert V1.verify("v1.public.", payload, pk2) == {:error, "Failed to verify signature."}
-    end
-
-    test "Simple sign/verify, with footer" do
-      message = "Test Message"
-      footer = "key-id:533434"
-      {pk, sk} = :crypto.generate_key(:rsa, {2048, 65537})
-      signed_token = V1.sign(message, sk, footer)
-      payload = String.replace(signed_token, "v1.public.", "")
-      [_, _, payload, _] = String.split(signed_token, ".")
-
-      assert V1.verify("v1.public.", payload, pk, footer) == {:ok, message}
     end
   end
 end
