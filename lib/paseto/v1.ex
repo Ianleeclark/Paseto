@@ -8,8 +8,6 @@ defmodule Paseto.V1 do
   alias Paseto.Utils.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
 
-  require Logger
-
   @required_keys [:version, :purpose, :payload]
   @all_keys @required_keys ++ [:footer]
 
@@ -17,14 +15,11 @@ defmodule Paseto.V1 do
   defstruct @all_keys
 
   @header 'v1'
-  @cipher_mode 'aes-256-ctr'
-  @hash_algo 'sha384'
-
-  @symmetric_key_bytes 32
+  @hash_algo :sha384
 
   @nonce_size 32
   @mac_size 48
-  @sign_size 256
+  @signature_size 2048
 
   @doc """
   Takes a token and will decrypt/verify the signature and return the token in a more digestable manner
@@ -63,37 +58,78 @@ defmodule Paseto.V1 do
   """
   @spec decrypt(String.t(), String.t(), String.t() | nil) :: String.t()
   def decrypt(data, key, footer \\ "") do
-    aead_decrypt(data, "v1.local.", key, footer)
+    aead_decrypt(data, "#{@header}.local.", key, footer)
   end
 
-  @spec decrypt(String.t(), String.t(), String.t() | nil) :: String.t()
-  def sign(data, key, footer \\ nil) do
+  @doc """
+  Handles signing the token for public use.
+
+  Examples:
+
+  """
+  @spec sign(String.t(), String.t(), String.t()) :: String.t()
+  def sign(data, secret_key, footer \\ "") do
+    h = "#{@header}.public."
+    m2 = Utils.pre_auth_encode([h, data, footer])
+
+    signature = :crypto.sign(
+      :rsa,
+      @hash_algo,
+      m2,
+      secret_key,
+      [
+        {:rsa_pad, :rsa_pkcs1_pss_padding},
+        {:rsa_mgf1_md, @hash_algo}
+      ]
+    )
+
+    case footer do
+      "" -> h <> Base.url_encode64(data <> signature)
+      _ -> h <> Base.url_encode64(data <> signature) <> "." <> Base.url_encode64(footer)
+    end
   end
 
-  @spec decrypt(String.t(), String.t(), String.t() | nil) :: String.t()
-  def verify(signed_message, key, footer \\ nil) do
-  end
+  @doc """
+  Handles verifying the signature belongs to the provided key.
 
-  @spec get_symmetric_key_byte_length() :: number
-  defp get_symmetric_key_byte_length() do
-  end
+  Examples:
 
-  @spec generate_asymmetric_secret_key() :: String.t()
-  defp generate_asymmetric_secret_key() do
-  end
+  """
+  @spec verify(String.t(), String.t(), String.t() | nil) :: :ok | {:error, String.t()}
+  def verify(header, signed_message, key, footer \\ "") do
+    case footer do
+      "" -> :ok
+      _ ->
+        # TODO(ian): Match the footer to what's appended to the message
+    end
 
-  @spec generate_symmetric_key() :: String.t()
-  def generate_symmetric_key do
+    case String.equivalent?(header, "#{@header}.public") do
+      true -> :ok
+      false -> {:error, "Token doesn't start with correct header"}
+    end
+
+    message_size = byte_size(signed_message) - (@signature_size / 8)
+    << message :: size(message_size), signature :: size(@signature_size) >> = signed_message
+
+    m2 = Utils.pre_auth_encode([header, << message :: size(message_size) >>, footer])
+
+    :crypto.verify(
+      :rsa,
+      @hash_algo,
+      m2,
+      << signature :: size(@signature_size) >>,
+      key
+    )
   end
 
   @spec aead_encrypt(String.t(), String.t(), String.t() | nil) :: String.t()
-  defp aead_encrypt(plaintext, key, footer \\ "") do
+  defp aead_encrypt(plaintext, key, footer) do
     h = "#{@header}.local."
 
     nonce = get_nonce(plaintext, :crypto.strong_rand_bytes(@nonce_size))
     <<leftmost::size(128), rightmost::size(128)>> = nonce
-    ek = HKDF.derive(:sha384, key, 32, <<leftmost::128>>, "paseto-encryption-key")
-    ak = HKDF.derive(:sha384, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
+    ek = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-encryption-key")
+    ak = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
 
     ciphertext = PasetoCrypto.aes_256_ctr_encrypt(ek, plaintext, <<rightmost::128>>)
 
@@ -114,7 +150,7 @@ defmodule Paseto.V1 do
   end
 
   @spec aead_decrypt(String.t(), String.t(), String.t(), String.t() | nil) :: String.t()
-  defp aead_decrypt(message, header, key, footer \\ "") do
+  defp aead_decrypt(message, header, key, footer) do
     expected_len = String.length(header)
     given_header = String.slice(message, 0..(expected_len - 1))
 
@@ -133,9 +169,7 @@ defmodule Paseto.V1 do
           decoded_value
 
         {:error, reason} ->
-          msg = "Failed to decode header #{given_header} during decryption due to #{reason}"
-          Logger.debug(msg)
-          {:error, msg}
+          {:error, "Failed to decode header #{given_header} during decryption due to #{reason}"}
       end
 
     length = byte_size(decoded)
@@ -145,39 +179,30 @@ defmodule Paseto.V1 do
     <<nonce::256, ciphertext::size(ciphertext_len), mac::384>> = decoded
     <<leftmost::128, rightmost::128>> = <<nonce::256>>
 
-    ek = HKDF.derive(:sha384, key, 32, <<leftmost::128>>, "paseto-encryption-key")
-    ak = HKDF.derive(:sha384, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
+    ek = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-encryption-key")
+    ak = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
 
     calc =
       [header, {nonce, @nonce_size * 8}, {ciphertext, ciphertext_len}, footer]
       |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
-    retval =
-      if calc == <<mac::384>> do
-        plaintext =
-          PasetoCrypto.aes_256_ctr_decrypt(
-            ek,
-            <<ciphertext::size(ciphertext_len)>>,
-            <<rightmost::128>>
-          )
+    if calc == <<mac::384>> do
+      plaintext =
+        PasetoCrypto.aes_256_ctr_decrypt(
+          ek,
+          <<ciphertext::size(ciphertext_len)>>,
+          <<rightmost::128>>
+        )
 
-        {:ok, plaintext}
-      else
-        {:error, "Calculated hmac didn't match hmac from token."}
-      end
+      {:ok, plaintext}
+    else
+      {:error, "Calculated hmac didn't match hmac from token."}
+    end
   end
 
   @spec get_nonce(String.t(), String.t()) :: binary
   defp get_nonce(m, n) do
     PasetoCrypto.hmac_sha384(n, m, 32)
-  end
-
-  @spec get_rsa :: String.t()
-  defp get_rsa() do
-  end
-
-  @spec get_rsa_public_key(String.t()) :: String.t()
-  defp get_rsa_public_key(key_data) do
   end
 end
