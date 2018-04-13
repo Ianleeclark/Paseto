@@ -4,6 +4,8 @@ defmodule Paseto.V1 do
   The Version1 implementation of the Paseto protocol.
   """
 
+  @behaviour Paseto.VersionBehaviour
+
   alias Paseto.Token
   alias Paseto.Utils.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
@@ -41,7 +43,7 @@ defmodule Paseto.V1 do
   iex> Paseto.V1.encrypt("This is a test message", "Test Key")
   "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
   """
-  @spec encrypt(String.t(), String.t(), nil | String.t()) :: String.t() | {:error, String.t()}
+  @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
   def encrypt(data, key, footer \\ "") do
     aead_encrypt(data, key, footer)
   end
@@ -56,7 +58,8 @@ defmodule Paseto.V1 do
   iex> Paseto.V1.decrypt(token, "Test Key")
   {:ok, "This is a test message"}
   """
-  @spec decrypt(String.t(), String.t(), String.t() | nil) :: String.t()
+  @spec decrypt(String.t(), String.t(), String.t() | nil) ::
+          {:ok, String.t()} | {:error, String.t()}
   def decrypt(data, key, footer \\ "") do
     aead_decrypt(data, "#{@header}.local.", key, footer)
   end
