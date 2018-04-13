@@ -65,23 +65,20 @@ defmodule Paseto.V1 do
   Handles signing the token for public use.
 
   Examples:
-
+  iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
+  iex> V1.sign("This is a test message!", secret_key)
+  "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t()
   def sign(data, secret_key, footer \\ "") do
     h = "#{@header}.public."
     m2 = Utils.pre_auth_encode([h, data, footer])
 
-    signature = :crypto.sign(
-      :rsa,
-      @hash_algo,
-      m2,
-      secret_key,
-      [
+    signature =
+      :crypto.sign(:rsa, @hash_algo, m2, secret_key, [
         {:rsa_padding, :rsa_pkcs1_pss_padding},
         {:rsa_mgf1_md, @hash_algo}
-      ]
-    )
+      ])
 
     case footer do
       "" -> h <> b64_encode(data <> signature)
@@ -92,29 +89,36 @@ defmodule Paseto.V1 do
   @doc """
   Handles verifying the signature belongs to the provided key.
 
+  Examples:
+  iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
+  iex> token = V1.sign("This is a test message!", secret_key)
+  "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
+  iex> [version, purpose, payload] = String.split(token, ".")
+  iex> V1.verify(version <> "." <> purpose <> ".", payload, public_key)
+  {:ok, "This is a test message!"}
   """
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
-  def verify(header, signed_message, key, footer \\ "") do
-    with  :ok <- valid_header?(:verify, header),
-         {:ok, decoded} <- valid_b64?(:decode, signed_message)
-    do
-      message_size = (byte_size(decoded) - (@signature_size / 8)) * 8 |> round
-      << message :: size(message_size), signature :: size(@signature_size) >> = decoded
+  def verify(header, signed_message, [exp, mod] = public_key, footer \\ "")
+      when byte_size(mod) == 256 do
+    with :ok <- valid_header?(:verify, header),
+         {:ok, decoded} <- valid_b64?(:decode, signed_message) do
+      message_size = round((byte_size(decoded) - @signature_size / 8) * 8)
+      <<message::size(message_size), signature::size(@signature_size)>> = decoded
 
-      m2 = Utils.pre_auth_encode([header, << message :: size(message_size) >>, footer])
+      m2 = Utils.pre_auth_encode([header, <<message::size(message_size)>>, footer])
 
       case :crypto.verify(
-            :rsa,
-            @hash_algo,
-            m2,
-            << signature :: size(@signature_size) >>,
-            key,
-            [
-              {:rsa_padding, :rsa_pkcs1_pss_padding},
-              {:rsa_mgf1_md, @hash_algo}
-            ]
-          ) do
-        true -> {:ok, << message :: size(message_size) >>}
+             :rsa,
+             @hash_algo,
+             m2,
+             <<signature::size(@signature_size)>>,
+             public_key,
+             [
+               {:rsa_padding, :rsa_pkcs1_pss_padding},
+               {:rsa_mgf1_md, @hash_algo}
+             ]
+           ) do
+        true -> {:ok, <<message::size(message_size)>>}
         false -> {:error, "Failed to verify signature."}
       end
     else
@@ -143,9 +147,7 @@ defmodule Paseto.V1 do
         h <> b64_encode(nonce <> ciphertext <> pre_auth_hash)
 
       _ ->
-        h <>
-          b64_encode(nonce <> ciphertext <> pre_auth_hash) <>
-          "." <> b64_encode(footer)
+        h <> b64_encode(nonce <> ciphertext <> pre_auth_hash) <> "." <> b64_encode(footer)
     end
   end
 
@@ -161,9 +163,7 @@ defmodule Paseto.V1 do
       end
 
     decoded =
-      case b64_decode(
-             String.slice(message, expected_len..(String.length(message) - footer_len))
-           ) do
+      case b64_decode(String.slice(message, expected_len..(String.length(message) - footer_len))) do
         {:ok, decoded_value} ->
           decoded_value
 
@@ -232,9 +232,9 @@ defmodule Paseto.V1 do
 
   @spec valid_header?(:decrypt, String.t()) :: :ok | {:error, String.t()}
   defp valid_header?(:decrypt, header) do
-      case String.equivalent?(header, "#{@header}.local") do
-        true -> :ok
-        false -> {:error, "Token doesn't start with correct header"}
-      end
+    case String.equivalent?(header, "#{@header}.local") do
+      true -> :ok
+      false -> {:error, "Token doesn't start with correct header"}
+    end
   end
 end
