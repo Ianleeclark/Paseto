@@ -76,16 +76,18 @@ defmodule Paseto.V1 do
       :rsa,
       @hash_algo,
       m2,
-      secret_key,
-      [
-        {:rsa_pad, :rsa_pkcs1_pss_padding},
-        {:rsa_mgf1_md, @hash_algo}
-      ]
+      secret_key
     )
 
+    # TODO(ian): Re-enable following in crypto.sign
+    # [
+    #   # {:rsa_pad, :rsa_pkcs1_pss_padding},
+    #   # {:rsa_mgf1_md, @hash_algo}
+    # ]
+
     case footer do
-      "" -> h <> Base.url_encode64(data <> signature)
-      _ -> h <> Base.url_encode64(data <> signature) <> "." <> Base.url_encode64(footer)
+      "" -> h <> b64_encode(data <> signature)
+      _ -> h <> b64_encode(data <> signature) <> "." <> b64_encode(footer)
     end
   end
 
@@ -113,13 +115,10 @@ defmodule Paseto.V1 do
 
     m2 = Utils.pre_auth_encode([header, << message :: size(message_size) >>, footer])
 
-    :crypto.verify(
-      :rsa,
-      @hash_algo,
-      m2,
-      << signature :: size(@signature_size) >>,
-      key
-    )
+    case :crypto.verify(:rsa, @hash_algo, m2, << signature :: size(@signature_size) >>, key) do
+      true -> message
+      false -> {:error, "Failed to verify signature."}
+    end
   end
 
   @spec aead_encrypt(String.t(), String.t(), String.t() | nil) :: String.t()
@@ -140,12 +139,12 @@ defmodule Paseto.V1 do
 
     case footer do
       "" ->
-        h <> Base.url_encode64(nonce <> ciphertext <> pre_auth_hash, padding: false)
+        h <> b64_encode(nonce <> ciphertext <> pre_auth_hash)
 
       _ ->
         h <>
-          Base.url_encode64(nonce <> ciphertext <> pre_auth_hash, padding: false) <>
-          "." <> Base.url_encode64(footer, padding: false)
+          b64_encode(nonce <> ciphertext <> pre_auth_hash) <>
+          "." <> b64_encode(footer)
     end
   end
 
@@ -161,9 +160,8 @@ defmodule Paseto.V1 do
       end
 
     decoded =
-      case Base.url_decode64(
-             String.slice(message, expected_len..(String.length(message) - footer_len)),
-             padding: false
+      case b64_decode(
+             String.slice(message, expected_len..(String.length(message) - footer_len))
            ) do
         {:ok, decoded_value} ->
           decoded_value
@@ -174,7 +172,7 @@ defmodule Paseto.V1 do
 
     length = byte_size(decoded)
     ciphertext_len = (length - @nonce_size - @mac_size) * 8
-    footer = Base.url_decode64!(footer)
+    footer = b64_decode!(footer)
 
     <<nonce::256, ciphertext::size(ciphertext_len), mac::384>> = decoded
     <<leftmost::128, rightmost::128>> = <<nonce::256>>
@@ -205,4 +203,13 @@ defmodule Paseto.V1 do
   defp get_nonce(m, n) do
     PasetoCrypto.hmac_sha384(n, m, 32)
   end
+
+  @spec b64_encode(binary) :: binary
+  defp b64_encode(input) when is_binary(input), do: Base.url_encode64(input, padding: false)
+
+  @spec b64_decode(binary) :: binary
+  defp b64_decode(input) when is_binary(input), do: Base.url_decode64(input, padding: false)
+
+  @spec b64_decode(binary) :: binary
+  defp b64_decode!(input) when is_binary(input), do: Base.url_decode64!(input, padding: false)
 end

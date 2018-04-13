@@ -22,4 +22,12 @@ defmodule PasetoTest.V1 do
       assert V1.decrypt(result, key, encoded_footer) == {:ok, message}
     end
   end
+
+  describe "Sign/Verify tests" do
+    test "Simple sign/verify, footerless" do
+    end
+
+    test "Simple sign/verify, with footer" do
+    end
+  end
 end
