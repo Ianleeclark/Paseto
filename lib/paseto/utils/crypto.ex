@@ -26,6 +26,19 @@ defmodule Paseto.Utils.Crypto do
   end
 
   @doc """
+  """
+  @spec chacha20_poly1305_encrypt(String.t(), binary, binary, binary) :: binary
+  def chacha20_poly1305_encrypt(message, pre_auth, nonce, key) do
+    :crypto.block_encrypt(
+      :chacha20_poly1305,
+      key,
+      nonce,
+      # TODO(ian): This is missing the AAD
+      {pre_auth, message}
+    )
+  end
+
+  @doc """
   Performs a HMAC-SHA384
   """
   @spec hmac_sha384(String.t(), String.t()) :: binary

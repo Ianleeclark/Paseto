@@ -22,7 +22,8 @@ defmodule Paseto.MixProject do
     [
       {:credo, "~> 0.9.0-rc1", only: [:dev, :test], runtime: false},
       {:hkdf, "~> 0.1.0"},
-      {:hexate, ">= 0.6.0"}
+      {:hexate, ">= 0.6.0"},
+      {:blake2, "~> 1.0"}
     ]
   end
 
