@@ -1,6 +1,8 @@
 defmodule Paseto.Utils.Crypto do
   @moduledoc false
 
+  alias Salty.Aead.Xchacha20poly1305Ietf
+
   @doc """
   AES-256 in counter mode for encrypting. Used for v1 local.
   """
@@ -29,13 +31,8 @@ defmodule Paseto.Utils.Crypto do
   """
   @spec chacha20_poly1305_encrypt(String.t(), binary, binary, binary) :: binary
   def chacha20_poly1305_encrypt(message, pre_auth, nonce, key) do
-    :crypto.block_encrypt(
-      :chacha20_poly1305,
-      key,
-      nonce,
-      # TODO(ian): This is missing the AAD
-      {pre_auth, message}
-    )
+    <<leftmost::96, rightmost::96>> = nonce
+    Xchacha20poly1305Ietf.encrypt(message, pre_auth, nil, <<rightmost::96>>, key)
   end
 
   @doc """
