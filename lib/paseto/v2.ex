@@ -10,6 +10,8 @@ defmodule Paseto.V2 do
   alias Paseto.Utils.Utils
   alias Paseto.Utils.Crypto
 
+  require Logger
+
   @required_keys [:version, :purpose, :payload]
   @all_keys @required_keys ++ [:footer]
 
@@ -26,20 +28,24 @@ defmodule Paseto.V2 do
     }
   end
 
+  @key_len 32
+
   @doc """
   Handles encrypting the payload and returning a valid token
 
   Examples:
   """
   @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
-  def encrypt(data, key, footer \\ "") do
+  def encrypt(_data, key) when byte_size(key) != @key_len do
+    {:error, "Invalid key length. Expected #{@key_len}, but got #{byte_size(key)}"}
+  end
+  def encrypt(data, key, footer \\ "") when byte_size(key) == @key_len do
     h = "#{@header}.local."
     n = :crypto.strong_rand_bytes(24)
     nonce = Blake2.hash2b(data, 24, n)
-
     pre_auth_encoded = Utils.pre_auth_encode([h, n, footer])
 
-    ciphertext = Crypto.chacha20_poly1305_encrypt(data, pre_auth_encoded, nonce, key)
+    {:ok, ciphertext} = Crypto.chacha20_poly1305_encrypt(data, pre_auth_encoded, nonce, key)
 
     case footer do
       "" -> h <> b64_encode(n <> ciphertext)

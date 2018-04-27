@@ -30,9 +30,10 @@ defmodule Paseto.Utils.Crypto do
   @doc """
   """
   @spec chacha20_poly1305_encrypt(String.t(), binary, binary, binary) :: binary
-  def chacha20_poly1305_encrypt(message, pre_auth, nonce, key) do
-    <<leftmost::96, rightmost::96>> = nonce
-    Xchacha20poly1305Ietf.encrypt(message, pre_auth, nil, <<rightmost::96>>, key)
+  def chacha20_poly1305_encrypt(message, ad, << nonce :: size(192) >>, << key :: size(256) >>) do
+    <<leftmost::96, rightmost::96>> = << nonce :: size(192) >>
+    # NOTE: nsec (the `nil` value here, isn't used in libsodium.)
+    Xchacha20poly1305Ietf.encrypt(message, ad, nil, << nonce :: size(192) >>, << key :: size(256) >>)
   end
 
   @doc """
