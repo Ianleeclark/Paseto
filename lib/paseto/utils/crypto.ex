@@ -1,6 +1,8 @@
 defmodule Paseto.Utils.Crypto do
   @moduledoc false
 
+  alias Salty.Aead.Xchacha20poly1305Ietf
+
   @doc """
   AES-256 in counter mode for encrypting. Used for v1 local.
   """
@@ -23,6 +25,44 @@ defmodule Paseto.Utils.Crypto do
       |> :crypto.stream_decrypt(data)
 
     plaintext
+  end
+
+  @doc """
+  Encryption method used for v2 local. See: libsodium
+  """
+  @spec xchacha20_poly1305_encrypt(String.t(), binary, binary, binary) :: binary
+  def xchacha20_poly1305_encrypt(message, aad, nonce, key)
+      when byte_size(nonce) == 24 and byte_size(key) == 32 do
+    # NOTE: nsec (the `nil` value here, isn't used in libsodium.)
+    Xchacha20poly1305Ietf.encrypt(message, aad, nil, nonce, key)
+  end
+
+  @doc """
+  Encryption method used for v2 local. See: libsodium
+  """
+  @spec xchacha20_poly1305_decrypt(String.t(), binary, binary, binary) :: binary
+  def xchacha20_poly1305_decrypt(message, aad, nonce, key)
+      when byte_size(nonce) != 24 and byte_size(key) == 32 do
+    {:error, "Invalid nonce for xchacha. Expected 24, got #{byte_size(nonce)}"}
+  end
+
+  def xchacha20_poly1305_decrypt(message, aad, nonce, key)
+      when byte_size(nonce) == 24 and byte_size(key) != 32 do
+    {:error, "Invalid key for xchacha. Expected 32, got #{byte_size(key)}"}
+  end
+
+  def xchacha20_poly1305_decrypt(message, aad, nonce, key)
+      when byte_size(nonce) != 24 and byte_size(key) != 32 do
+    {:error,
+     "Invalid key/nonce for xchacha. Expected 32/24 bytes, got #{byte_size(key)}/#{
+       byte_size(nonce)
+     }, respectively."}
+  end
+
+  def xchacha20_poly1305_decrypt(message, aad, nonce, key)
+      when byte_size(nonce) == 24 and byte_size(key) == 32 do
+    # NOTE: Again, `nsec` isn't used.
+    Xchacha20poly1305Ietf.decrypt(nil, message, aad, nonce, key)
   end
 
   @doc """
