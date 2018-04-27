@@ -30,7 +30,7 @@ defmodule Paseto.V2 do
 
   @key_len 32
   @nonce_len_bits 192
-  @nonce_len round(@nonce_len_bits/8)
+  @nonce_len round(@nonce_len_bits / 8)
   @header "v2"
 
   @doc """
@@ -39,9 +39,10 @@ defmodule Paseto.V2 do
   Examples:
   """
   @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
-  def encrypt(_data, key) when byte_size(key) != @key_len do
+  def encrypt(_data, key, _footer) when byte_size(key) != @key_len do
     {:error, "Invalid key length. Expected #{@key_len}, but got #{byte_size(key)}"}
   end
+
   def encrypt(data, key, footer \\ "") when byte_size(key) == @key_len do
     h = "#{@header}.local."
     n = :crypto.strong_rand_bytes(@nonce_len)
@@ -59,19 +60,32 @@ defmodule Paseto.V2 do
   @doc """
   Handles decrypting a token given the correct key
   """
-  @spec decrypt(String.t(), String.t(), String.t() | nil) :: {:ok, String.t()} | {:error, String.t()}
+  @spec decrypt(String.t(), String.t(), String.t() | nil) ::
+          {:ok, String.t()} | {:error, String.t()}
   def decrypt(data, key, footer) when byte_size(key) != @key_len do
     {:error, "Invalid key length. Expected #{@key_len}, but got #{byte_size(key)}"}
   end
+
   def decrypt(data, key, footer \\ "") when byte_size(key) == @key_len do
     h = "#{@header}.local."
-    m = String.replace(data, h, "")
     # TODO(ian): Clean this up
-    {:ok, decoded_payload} = b64_decode(m)
-    << nonce :: size(@nonce_len_bits), ciphertext :: binary >> = decoded_payload
-    pre_auth_encode = Utils.pre_auth_encode([h, << nonce :: size(@nonce_len_bits) >>, footer])
+    {:ok, decoded_payload} = b64_decode(data)
 
-    case Crypto.xchacha20_poly1305_decrypt(ciphertext, pre_auth_encode, << nonce :: size(@nonce_len_bits) >>, key) do
+    {:ok, decoded_footer} =
+      case footer do
+        "" -> {:ok, ""}
+        _ -> b64_decode(footer)
+      end
+
+    <<nonce::size(@nonce_len_bits), ciphertext::binary>> = decoded_payload
+    pre_auth_encode = Utils.pre_auth_encode([h, <<nonce::size(@nonce_len_bits)>>, decoded_footer])
+
+    case Crypto.xchacha20_poly1305_decrypt(
+           ciphertext,
+           pre_auth_encode,
+           <<nonce::size(@nonce_len_bits)>>,
+           key
+         ) do
       {:ok, plaintext} -> {:ok, plaintext}
       {:error, reason} -> {:error, "Failed to decrypt payload due to: #{reason}"}
     end
