@@ -8,12 +8,10 @@ jobs:
       # specify the version here
       - image: circleci/elixir:1.5
 
-    dependencies:
-      pre:
-        - sudo apt update; sudo apt install libsodium-dev
-
     steps:
       - checkout
+
+      - run: sudo apt update; sudo apt install libsodium-dev
 
       - run: mix local.hex --force  # install Hex locally (without prompt)
       - run: mix local.rebar --force  # fetch a copy of rebar (without prompt)
