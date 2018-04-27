@@ -22,7 +22,7 @@ defmodule PasetoTest.V2 do
 
       payload =
         result
-        |> String.replace(result, "v2.local.", "")
+        |> String.replace("v2.local.", "")
         |> String.replace("." <> encoded_footer, "")
 
       assert V2.decrypt(payload, key, encoded_footer) == {:ok, message}

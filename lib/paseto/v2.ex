@@ -36,11 +36,44 @@ defmodule Paseto.V2 do
   @doc """
   Handles encrypting the payload and returning a valid token
 
-  Examples:
+  # Examples:
+  iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188,
+  168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
+  iex> Paseto.V2.encrypt("This is a test message", key)
   """
   @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
   def encrypt(data, key, footer \\ "") do
     aead_encrypt(data, key, footer)
+  end
+
+  @doc """
+  Handles decrypting a token payload given the correct key.
+
+  # Examples:
+  iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188,
+  168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
+  iex(21)> Paseto.V2.decrypt("AUfxx2uuiOXEXnYlMCzesBUohpewQTQQURBonherEWHcRgnaJfMfZXCt96hciML5PN9ozels1bnPidmFvVc", key)
+  {:ok, "This is a test message"}
+  """
+  @spec decrypt(String.t(), String.t(), String.t() | nil) ::
+  {:ok, String.t()} | {:error, String.t()}
+  def decrypt(data, key, footer \\ "") do
+    aead_decrypt(data, key, footer)
+  end
+
+  @doc """
+  Handles signing the token for public use.
+  """
+  @spec sign(String.t(), String.t(), String.t()) :: String.t()
+  def sign(_data, _secret_key, _footer \\ "") do
+  end
+
+  @doc """
+  Handles verifying the signature belongs to the provided key.
+  """
+  @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
+  def verify(_header, _signed_message, [_exp, mod] = _public_key, _footer \\ "")
+  when byte_size(mod) == 256 do
   end
 
   @spec aead_encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
@@ -62,15 +95,6 @@ defmodule Paseto.V2 do
     end
   end
 
-  @doc """
-  Handles decrypting a token payload given the correct key.
-  """
-  @spec decrypt(String.t(), String.t(), String.t() | nil) ::
-          {:ok, String.t()} | {:error, String.t()}
-  def decrypt(data, key, footer \\ "") do
-    aead_decrypt(data, key, footer)
-  end
-
   @spec aead_decrypt(String.t(), binary, String.t()) :: {:ok, String.t()} | {:error, String.t()}
   defp aead_decrypt(_data, key, _footer) when byte_size(key) != @key_len do
     {:error, "Invalid key length. Expected #{@key_len}, but got #{byte_size(key)}"}
@@ -90,30 +114,14 @@ defmodule Paseto.V2 do
     pre_auth_encode = Utils.pre_auth_encode([h, <<nonce::size(@nonce_len_bits)>>, decoded_footer])
 
     case Crypto.xchacha20_poly1305_decrypt(
-           ciphertext,
-           pre_auth_encode,
-           <<nonce::size(@nonce_len_bits)>>,
-           key
-         ) do
+          ciphertext,
+          pre_auth_encode,
+          <<nonce::size(@nonce_len_bits)>>,
+          key
+        ) do
       {:ok, plaintext} -> {:ok, plaintext}
       {:error, reason} -> {:error, "Failed to decrypt payload due to: #{reason}"}
     end
-  end
-
-  @doc """
-  Handles signing the token for public use.
-
-  """
-  @spec sign(String.t(), String.t(), String.t()) :: String.t()
-  def sign(_data, _secret_key, _footer \\ "") do
-  end
-
-  @doc """
-  Handles verifying the signature belongs to the provided key.
-  """
-  @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
-  def verify(_header, _signed_message, [_exp, mod] = _public_key, _footer \\ "")
-      when byte_size(mod) == 256 do
   end
 
   @spec b64_encode(binary) :: binary
