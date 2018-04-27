@@ -11,7 +11,7 @@ jobs:
     steps:
       - checkout
 
-      - run: sudo apt update; sudo apt install libsodium-dev
+      - run: sudo apt update; sudo apt install libsodium-dev build-essential erlang-dev
 
       - run: mix local.hex --force  # install Hex locally (without prompt)
       - run: mix local.rebar --force  # fetch a copy of rebar (without prompt)
