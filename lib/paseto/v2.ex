@@ -39,11 +39,16 @@ defmodule Paseto.V2 do
   Examples:
   """
   @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
-  def encrypt(_data, key, _footer) when byte_size(key) != @key_len do
+  def encrypt(data, key, footer \\ "") do
+    aead_encrypt(data, key, footer)
+  end
+
+  @spec aead_encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
+  defp aead_encrypt(_data, key, _footer) when byte_size(key) != @key_len do
     {:error, "Invalid key length. Expected #{@key_len}, but got #{byte_size(key)}"}
   end
 
-  def encrypt(data, key, footer \\ "") when byte_size(key) == @key_len do
+  defp aead_encrypt(data, key, footer) when byte_size(key) == @key_len do
     h = "#{@header}.local."
     n = :crypto.strong_rand_bytes(@nonce_len)
     nonce = Blake2.hash2b(data, @nonce_len, n)
@@ -58,23 +63,27 @@ defmodule Paseto.V2 do
   end
 
   @doc """
-  Handles decrypting a token given the correct key
+  Handles decrypting a token payload given the correct key.
   """
   @spec decrypt(String.t(), String.t(), String.t() | nil) ::
           {:ok, String.t()} | {:error, String.t()}
-  def decrypt(data, key, footer) when byte_size(key) != @key_len do
+  def decrypt(data, key, footer \\ "") do
+    aead_decrypt(data, key, footer)
+  end
+
+  @spec aead_decrypt(String.t(), binary, String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  defp aead_decrypt(_data, key, _footer) when byte_size(key) != @key_len do
     {:error, "Invalid key length. Expected #{@key_len}, but got #{byte_size(key)}"}
   end
 
-  def decrypt(data, key, footer \\ "") when byte_size(key) == @key_len do
+  defp aead_decrypt(data, key, footer) when byte_size(key) == @key_len do
     h = "#{@header}.local."
-    # TODO(ian): Clean this up
-    {:ok, decoded_payload} = b64_decode(data)
+    decoded_payload = b64_decode!(data)
 
-    {:ok, decoded_footer} =
+    decoded_footer =
       case footer do
-        "" -> {:ok, ""}
-        _ -> b64_decode(footer)
+        "" -> ""
+        _ -> b64_decode!(footer)
       end
 
     <<nonce::size(@nonce_len_bits), ciphertext::binary>> = decoded_payload
@@ -96,23 +105,20 @@ defmodule Paseto.V2 do
 
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t()
-  def sign(data, secret_key, footer \\ "") do
+  def sign(_data, _secret_key, _footer \\ "") do
   end
 
   @doc """
   Handles verifying the signature belongs to the provided key.
   """
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
-  def verify(header, signed_message, [exp, mod] = public_key, footer \\ "")
+  def verify(_header, _signed_message, [_exp, mod] = _public_key, _footer \\ "")
       when byte_size(mod) == 256 do
   end
 
   @spec b64_encode(binary) :: binary
   defp b64_encode(input) when is_binary(input), do: Base.url_encode64(input, padding: false)
 
-  @spec b64_decode(binary) :: binary
-  defp b64_decode(input) when is_binary(input), do: Base.url_decode64(input, padding: false)
-
-  @spec b64_decode(binary) :: binary
+  @spec b64_decode!(binary) :: binary
   defp b64_decode!(input) when is_binary(input), do: Base.url_decode64!(input, padding: false)
 end
