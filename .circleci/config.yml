@@ -8,6 +8,10 @@ jobs:
       # specify the version here
       - image: circleci/elixir:1.5
 
+    dependencies:
+      pre:
+        - sudo apt update; sudo apt install libsodium-dev
+
     steps:
       - checkout
 
