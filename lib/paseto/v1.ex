@@ -41,9 +41,9 @@ defmodule Paseto.V1 do
   @doc """
   Handles encrypting the payload and returning a valid token
 
-  Examples:
-  iex> Paseto.V1.encrypt("This is a test message", "Test Key")
-  "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
+  # Examples:
+      iex> Paseto.V1.encrypt("This is a test message", "Test Key")
+      "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
   """
   @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
   def encrypt(data, key, footer \\ "") do
@@ -53,12 +53,12 @@ defmodule Paseto.V1 do
   @doc """
   Handles decrypting a token given the correct key
 
-  Examples:
-  iex> token = Paseto.V1.encrypt("This is a test message", "Test Key")
-  iex> token
-  "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
-  iex> Paseto.V1.decrypt(token, "Test Key")
-  {:ok, "This is a test message"}
+  # Examples:
+      iex> token = Paseto.V1.encrypt("This is a test message", "Test Key")
+      iex> token
+      "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
+      iex> Paseto.V1.decrypt(token, "Test Key")
+      "{:ok, "This is a test message"}"
   """
   @spec decrypt(String.t(), String.t(), String.t() | nil) ::
           {:ok, String.t()} | {:error, String.t()}
@@ -69,10 +69,10 @@ defmodule Paseto.V1 do
   @doc """
   Handles signing the token for public use.
 
-  Examples:
-  iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
-  iex> V1.sign("This is a test message!", secret_key)
-  "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
+  # Examples:
+      iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
+      iex> V1.sign("This is a test message!", secret_key)
+      "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t()
   def sign(data, secret_key, footer \\ "") do
@@ -94,13 +94,13 @@ defmodule Paseto.V1 do
   @doc """
   Handles verifying the signature belongs to the provided key.
 
-  Examples:
-  iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
-  iex> token = V1.sign("This is a test message!", secret_key)
-  "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
-  iex> [version, purpose, payload] = String.split(token, ".")
-  iex> V1.verify(version <> "." <> purpose <> ".", payload, public_key)
-  {:ok, "This is a test message!"}
+  # Examples:
+      iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
+      iex> token = V1.sign("This is a test message!", secret_key)
+      "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
+      iex> [version, purpose, payload] = String.split(token, ".")
+      iex> V1.verify(version <> "." <> purpose <> ".", payload, public_key)
+      "{:ok, "This is a test message!"}"
   """
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
   def verify(signed_message, [_exp, mod] = public_key, footer \\ "")

@@ -16,15 +16,15 @@ defmodule Paseto do
   Handles parsing a token. Providing it just the entire token will return the %Paseto.Token{} struct with all fields populated.
 
   # Examples:
-  iex> token = "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
-  iex> Paseto.parse_token(token, keypair)
-  {:ok,
-    %Paseto.Token{
-      footer: nil,
-      payload: "This is a test message",
-      purpose: "public",
-      version: "v2"
-    }}
+      iex> token = "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
+      iex> Paseto.parse_token(token, keypair)
+      {:ok,
+        %Paseto.Token{
+          footer: nil,
+          payload: "This is a test message",
+          purpose: "public",
+          version: "v2"
+        }}
   """
   @spec parse_token(String.t(), binary()) :: {:ok, %Token{}} | {:error, String.t()}
   def parse_token(token, key) do
@@ -97,18 +97,18 @@ defmodule Paseto do
   * footer: An optional value, often used for storing keyIDs or other similar info.
 
   # Examples:
-  iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
-  iex> keypair = {pk, sk}
-  iex> token = generate_token("v2", "public", "This is a test message", keypair)
-  "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
-  iex> Paseto.parse_token(token, keypair)
-  {:ok,
-    %Paseto.Token{
-    footer: nil,
-    payload: "This is a test message",
-    purpose: "public",
-    version: "v2"
-    }} 
+      iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
+      iex> keypair = {pk, sk}
+      iex> token = generate_token("v2", "public", "This is a test message", keypair)
+      "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
+      iex> Paseto.parse_token(token, keypair)
+      {:ok,
+        %Paseto.Token{
+        footer: nil,
+        payload: "This is a test message",
+        purpose: "public",
+        version: "v2"
+        }} 
   """
   @spec generate_token(String.t(), String.t(), String.t(), String.t()) ::
           {:ok, String.t()} | {:error, String.t()}

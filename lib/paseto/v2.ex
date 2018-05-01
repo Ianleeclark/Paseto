@@ -43,9 +43,8 @@ defmodule Paseto.V2 do
   Handles encrypting the payload and returning a valid token
 
   # Examples:
-  iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188,
-  168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
-  iex> Paseto.V2.encrypt("This is a test message", key)
+      iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188, 168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
+      iex> Paseto.V2.encrypt("This is a test message", key)
   """
   @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
   def encrypt(data, key, footer \\ "") do
@@ -56,10 +55,9 @@ defmodule Paseto.V2 do
   Handles decrypting a token payload given the correct key.
 
   # Examples:
-  iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188,
-  168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
-  iex(21)> Paseto.V2.decrypt("AUfxx2uuiOXEXnYlMCzesBUohpewQTQQURBonherEWHcRgnaJfMfZXCt96hciML5PN9ozels1bnPidmFvVc", key)
-  {:ok, "This is a test message"}
+      iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188, 168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
+      iex> Paseto.V2.decrypt("AUfxx2uuiOXEXnYlMCzesBUohpewQTQQURBonherEWHcRgnaJfMfZXCt96hciML5PN9ozels1bnPidmFvVc", key)
+      "{:ok, "This is a test message"}"
   """
   @spec decrypt(String.t(), String.t(), String.t() | nil) ::
           {:ok, String.t()} | {:error, String.t()}
@@ -71,9 +69,9 @@ defmodule Paseto.V2 do
   Handles signing the token for public use.
 
   # Examples:
-  iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
-  iex> Paseto.V2.sign("Test Message", sk)
-  "v2.public.VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE"
+      iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
+      iex> Paseto.V2.sign("Test Message", sk)
+      "v2.public.VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE"
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t()
   def sign(data, secret_key, footer \\ "") when byte_size(secret_key) == 64 do
@@ -92,11 +90,11 @@ defmodule Paseto.V2 do
   Handles verifying the signature belongs to the provided key.
 
   # Examples:
-  iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
-  iex> Paseto.V2.sign("Test Message", sk)
-  "v2.public.VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE"
-  iex(37)> Paseto.V2.verify("VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE", pk)
-  {:ok, "Test"}
+      iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
+      iex> Paseto.V2.sign("Test Message", sk)
+      "v2.public.VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE"
+      iex> Paseto.V2.verify("VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE", pk)
+      "{:ok, "Test"}"
   """
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
   def verify(signed_message, public_key, footer \\ "") do
