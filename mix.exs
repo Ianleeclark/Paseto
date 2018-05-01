@@ -5,6 +5,7 @@ defmodule Paseto.MixProject do
     [
       app: :paseto,
       version: "0.3.0",
+      version: "0.2.0",
       elixir: "~> 1.5",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
