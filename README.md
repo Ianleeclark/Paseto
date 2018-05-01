@@ -1,8 +1,9 @@
 # Paseto
 [![CircleCI](https://circleci.com/gh/GrappigPanda/Paseto/tree/master.svg?style=svg)](https://circleci.com/gh/GrappigPanda/Paseto/tree/master)
-[![Hex.pm](https://img.shields.io/hexpm/v/plug.svg)](https://hex.pm/packages/paseto)
+[![Hex.pm](https://img.shields.io/hexpm/v/paseto.svg)](https://hex.pm/packages/paseto)
+[HexDocs](https://hexdocs.pm/paseto/api-reference.html)
 
-This repository houses an elixir implementation of ![Paseto](https://github.com/paragonie/paseto)
+This repository houses an elixir implementation of [Paseto](https://github.com/paragonie/paseto)
 
 From the reference implementation of Paseto:
 
