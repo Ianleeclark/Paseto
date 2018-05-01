@@ -4,11 +4,13 @@ defmodule Paseto.MixProject do
   def project do
     [
       app: :paseto,
-      version: "0.1.0",
+      version: "0.2.0",
       elixir: "~> 1.5",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      description: description(),
+      package: package()
     ]
   end
 
@@ -24,13 +26,29 @@ defmodule Paseto.MixProject do
       {:hkdf, "~> 0.1.0"},
       {:hexate, ">= 0.6.0"},
       {:blake2, "~> 1.0"},
-      {:salty, "~> 0.1.3", hex: :libsalty}
+      {:salty, "~> 0.1.3", hex: :libsalty},
+      {:stream_data, "~> 0.1", only: :test},
+      {:ex_doc, "~> 0.16", only: :dev, runtime: false}
     ]
   end
 
   defp aliases do
     [
       testall: ["credo", "test"]
+    ]
+  end
+
+  defp description do
+    "An Elixir implementation of the Paseto (Platform Agnostic Security Token) protocol."
+  end
+
+  defp package do
+    [
+      name: "paseto",
+      files: ["lib", "mix.exs", "README.*"],
+      maintainers: ["Ian Lee Clark"],
+      licenses: ["BSD 3-Clause"],
+      links: %{"Github" => "https://github.com/GrappigPanda/Paseto"}
     ]
   end
 end

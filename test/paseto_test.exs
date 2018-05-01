@@ -1,52 +1,67 @@
 defmodule PasetoTest do
   use ExUnit.Case
-  doctest Paseto
+  use ExUnitProperties
 
-  describe "test cases for parsing tokens" do
-    test "assure footer-less tokens parse correctly" do
-      {:ok, token} = Paseto.parse("v1.local.dGVzdA==")
-      assert token.version == "v1"
-      assert token.purpose == "local"
-      assert token.payload == "test"
-      assert token.footer == nil
+  alias Salty.Sign.Ed25519
+
+  @public_exponent 65_537
+
+  defp version_generator() do
+    ExUnitProperties.gen all version <- StreamData.member_of(["v1", "v2"]) do
+      version
     end
+  end
 
-    test "assure tokens with footers parse correctly" do
-      {:ok, token} = Paseto.parse("v1.local.dGVzdA==.kid=key001")
-      assert token.version == "v1"
-      assert token.purpose == "local"
-      assert token.payload == "test"
-      assert token.footer == "kid=key001"
+  defp purpose_generator() do
+    ExUnitProperties.gen all purpose <- StreamData.member_of(["local", "public"]) do
+      purpose
     end
+  end
 
-    test "assure tokens with realistic payloads parse correctly" do
-      {:ok, token} =
-        Paseto.parse(
-          "v1.local.eyJ1c2VySWQiOiAiYWVhNDI3N2YtZmY1My00ZTdlLThkYzMtMGVlYzAwZGFiMjA5IiwgInBlcm1pc3Npb25NYXNrIjogMTIzNDEyMzR9.kid=key001"
-        )
+  defp key_generator(version, purpose) do
+    case version do
+      "v1" ->
+        case purpose do
+          "local" -> "test key"
+          "public" -> :crypto.generate_key(:rsa, {2048, @public_exponent})
+        end
 
-      assert token.version == "v1"
-      assert token.purpose == "local"
+      "v2" ->
+        case purpose do
+          "local" ->
+            :crypto.strong_rand_bytes(32)
 
-      assert token.payload ==
-               "{\"userId\": \"aea4277f-ff53-4e7e-8dc3-0eec00dab209\", \"permissionMask\": 12341234}"
-
-      assert token.footer == "kid=key001"
+          "public" ->
+            {:ok, pk, sk} = Ed25519.keypair()
+            {pk, sk}
+        end
     end
+  end
 
-    test "assure invalid tokens (bad b64 encoding for payload) fail" do
-      {:error, retval} = Paseto.parse("v1.local.badbase64encoding==.kid=key001")
-      assert retval == "Invalid (non-base64 encoded) payload in token."
-    end
+  property "Property tests for generator/parse_tokens" do
+    check all version <- version_generator(),
+              purpose <- purpose_generator(),
+              footer <- StreamData.string(:ascii, min_length: 1),
+              plaintext <- StreamData.string(:ascii, min_length: 1),
+              key = key_generator(version, purpose),
+              token = Paseto.generate_token(version, purpose, plaintext, key, footer),
+              max_runs: 500 do
+      header = version <> "." <> purpose <> "."
+      assert String.starts_with?(token, header)
+      assert String.ends_with?(token, "." <> Base.url_encode64(footer, padding: false))
 
-    test "assure invalid version numbers error out" do
-      {:error, retval} = Paseto.parse("v3.local.dGVzdA==.kid=key001")
-      assert retval == "Invalid token version. Only versions 1 & 2 are supported"
-    end
+      x = Paseto.parse_token(token, key)
 
-    test "assure malformed tokens error" do
-      {:error, retval} = Paseto.parse("v3.local")
-      assert retval == "Invalid token encountered during token parsing"
+      token =
+        case x do
+          {:ok, token} -> token
+          {:error, reason} -> flunk("Failed to parse token due to: #{reason}")
+        end
+
+      assert token.footer == footer
+      assert token.version == version
+      assert token.purpose == purpose
+      assert token.payload == plaintext
     end
   end
 end
