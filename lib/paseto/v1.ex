@@ -1,7 +1,9 @@
 defmodule Paseto.V1 do
-  # TODO(ian): List some more info here, why you might choose v1, &c.
   @moduledoc """
   The Version1 implementation of the Paseto protocol.
+
+  More information about the implementation can be found here:
+  1.) https://github.com/paragonie/paseto/blob/master/docs/01-Protocol-Versions/Version1.md
   """
 
   @behaviour Paseto.VersionBehaviour

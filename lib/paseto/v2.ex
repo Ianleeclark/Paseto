@@ -1,7 +1,12 @@
 defmodule Paseto.V2 do
-  # TODO(ian): List some more info here, why you might choose v2, &c.
   @moduledoc """
   The Version2 implementation of the Paseto protocol.
+
+  More information about the implementation can be found here:
+  1.) https://github.com/paragonie/paseto/blob/master/docs/01-Protocol-Versions/Version2.md
+
+  In short, asymmetric encryption is handled by Ed25519, whereas symmetric encryption is handled by xchachapoly1305
+  Libsodium bindings are used for these crypto functions.
   """
 
   @behaviour Paseto.VersionBehaviour
