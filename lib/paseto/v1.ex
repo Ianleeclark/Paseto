@@ -104,9 +104,9 @@ defmodule Paseto.V1 do
   def verify(signed_message, [_exp, mod] = public_key, footer \\ "")
       when byte_size(mod) == 256 do
     header = "#{@header}.public."
+
     with {:ok, decoded} <- valid_b64?(:decode, signed_message),
-         {:ok, decoded_footer} <- b64_decode(footer)
-    do
+         {:ok, decoded_footer} <- b64_decode(footer) do
       message_size = round((byte_size(decoded) - @signature_size / 8) * 8)
       <<message::size(message_size), signature::size(@signature_size)>> = decoded
 

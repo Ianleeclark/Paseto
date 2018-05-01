@@ -9,7 +9,7 @@ defmodule PasetoTest.V1 do
     test "Simple encrypt/decrypt, footerless" do
       message = "Test Message"
       key = "TEST KEY"
-      result = V1.encrypt(message, key) |> String.replace("v1.local.", "")
+      result = String.replace(V1.encrypt(message, key), "v1.local.", "")
 
       assert V1.decrypt(result, key) == {:ok, message}
     end
@@ -18,7 +18,7 @@ defmodule PasetoTest.V1 do
       message = "Test Message"
       key = "TEST KEY"
       footer = "key-id:04440"
-      [_v, _p, result, encoded_footer] = V1.encrypt(message, key, footer) |> String.split(".")
+      [_v, _p, result, encoded_footer] = String.split(V1.encrypt(message, key, footer), ".")
 
       assert V1.decrypt(result, key, encoded_footer) == {:ok, message}
     end
@@ -62,8 +62,7 @@ defmodule PasetoTest.V1 do
       signed_token = V1.sign(message, sk1, footer)
       [_, _, payload, encoded_footer] = String.split(signed_token, ".")
 
-      assert V1.verify(payload, pk2, encoded_footer) ==
-               {:error, "Failed to verify signature."}
+      assert V1.verify(payload, pk2, encoded_footer) == {:error, "Failed to verify signature."}
     end
   end
 end

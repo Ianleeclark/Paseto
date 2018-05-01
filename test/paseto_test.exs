@@ -25,9 +25,12 @@ defmodule PasetoTest do
           "local" -> "test key"
           "public" -> :crypto.generate_key(:rsa, {2048, @public_exponent})
         end
+
       "v2" ->
         case purpose do
-          "local" -> :crypto.strong_rand_bytes(32)
+          "local" ->
+            :crypto.strong_rand_bytes(32)
+
           "public" ->
             {:ok, pk, sk} = Ed25519.keypair()
             {pk, sk}
@@ -37,22 +40,23 @@ defmodule PasetoTest do
 
   property "Property tests for generator/parse_tokens" do
     check all version <- version_generator(),
-      purpose <- purpose_generator(),
-      footer <- StreamData.string(:ascii, min_length: 1),
-      plaintext <- StreamData.string(:ascii, min_length: 1),
-      key = key_generator(version, purpose),
-      token = Paseto.generate_token(version, purpose, plaintext, key, footer),
-      max_runs: 500
-    do
+              purpose <- purpose_generator(),
+              footer <- StreamData.string(:ascii, min_length: 1),
+              plaintext <- StreamData.string(:ascii, min_length: 1),
+              key = key_generator(version, purpose),
+              token = Paseto.generate_token(version, purpose, plaintext, key, footer),
+              max_runs: 500 do
       header = version <> "." <> purpose <> "."
       assert String.starts_with?(token, header)
       assert String.ends_with?(token, "." <> Base.url_encode64(footer, padding: false))
 
       x = Paseto.parse_token(token, key)
-      token = case x do
-        {:ok, token} -> token
-        {:error, reason} -> flunk("Failed to parse token due to: #{reason}")
-      end
+
+      token =
+        case x do
+          {:ok, token} -> token
+          {:error, reason} -> flunk("Failed to parse token due to: #{reason}")
+        end
 
       assert token.footer == footer
       assert token.version == version
