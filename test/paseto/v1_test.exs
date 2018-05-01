@@ -18,8 +18,7 @@ defmodule PasetoTest.V1 do
       message = "Test Message"
       key = "TEST KEY"
       footer = "key-id:04440"
-      encoded_footer = Base.url_encode64(footer, padding: false)
-      result = V1.encrypt(message, key, footer)
+      [_v, _p, result, encoded_footer] = V1.encrypt(message, key, footer) |> String.split(".")
 
       assert V1.decrypt(result, key, encoded_footer) == {:ok, message}
     end

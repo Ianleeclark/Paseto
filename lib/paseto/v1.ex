@@ -103,7 +103,7 @@ defmodule Paseto.V1 do
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
   def verify(signed_message, [exp, mod] = public_key, footer \\ "")
       when byte_size(mod) == 256 do
-    header = "v1.local."
+    header = "v1.public."
     with :ok <- valid_header?(:verify, header),
          {:ok, decoded} <- valid_b64?(:decode, signed_message) do
       message_size = round((byte_size(decoded) - @signature_size / 8) * 8)
@@ -167,7 +167,7 @@ defmodule Paseto.V1 do
       end
 
     decoded =
-      case b64_decode(String.slice(message, expected_len..(String.length(message) - footer_len))) do
+      case b64_decode(message) do
         {:ok, decoded_value} ->
           decoded_value
 
