@@ -2,7 +2,7 @@ defmodule PasetoTest.V2 do
   use ExUnit.Case
 
   alias Paseto.V2
-  alias Salty.Box.Curve25519xchacha20poly1305, as: Box
+  alias Salty.Sign.Ed25519
 
   describe "Encryption/Decryption tests" do
     test "Simple encrypt/decrypt, footerless" do
@@ -33,42 +33,42 @@ defmodule PasetoTest.V2 do
   describe "Sign/Verify tests" do
     test "Simple sign/verify, footerless" do
       message = "Test Message"
-      {:ok, pk, sk} = Box.keypair()
+      {:ok, pk, sk} = Ed25519.keypair()
       signed_token = V2.sign(message, sk)
-      payload = String.replace(signed_token, "v1.public.", "")
+      payload = String.replace(signed_token, "v2.public.", "")
 
-      assert V2.verify("v1.public.", payload, pk) == {:ok, message}
+      assert V2.verify(payload, pk) == {:ok, message}
     end
 
     test "Simple sign/verify, with footer" do
       message = "Test Message"
       footer = "key-id:533434"
-      {:ok, pk, sk} = Box.keypair()
+      {:ok, pk, sk} = Ed25519.keypair()
       signed_token = V2.sign(message, sk, footer)
       [_, _, payload, _] = String.split(signed_token, ".")
 
-      assert V1.verify("v1.public.", payload, pk, footer) == {:ok, message}
+      assert V2.verify(payload, pk, Base.url_encode64(footer)) == {:ok, message}
     end
 
     test "Invalid PK fails to verify, footerless" do
       message = "Test Message"
-      {:ok, pk1, sk1} = Box.keypair()
-      {:ok, pk2, sk2} = Box.keypair()
+      {:ok, _pk1, sk1} = Ed25519.keypair()
+      {:ok, pk2, _sk2} = Ed25519.keypair()
       signed_token = V2.sign(message, sk1)
-      payload = String.replace(signed_token, "v1.public.", "")
+      payload = String.replace(signed_token, "v2.public.", "")
 
-      assert V1.verify("v1.public.", payload, pk2) == {:error, "Failed to verify signature."}
+      assert V2.verify(payload, pk2) == {:error, "Failed to verify signature."}
     end
 
     test "Invalid PK fails to verify, with footer" do
       message = "Test Message"
       footer = "key-id:533434"
-      {:ok, _pk1, sk1} = Box.keypair()
-      {:ok, pk2, _sk2} = Box.keypair()
+      {:ok, _pk1, sk1} = Ed25519.keypair()
+      {:ok, pk2, _sk2} = Ed25519.keypair()
       signed_token = V2.sign(message, sk1, footer)
       [_, _, payload, _] = String.split(signed_token, ".")
 
-      assert V1.verify("v1.public.", payload, pk2, footer) ==
+      assert V2.verify(payload, pk2, Base.url_encode64(footer)) ==
                {:error, "Failed to verify signature."}
     end
   end
