@@ -15,25 +15,27 @@ defmodule Paseto do
   @doc """
   """
   @spec parse_token(String.t(), binary()) :: {:ok, %Token{}} | {:error, String.t()}
-  defp parse_token(token, key) do
+  def parse_token(token, key) do
     case String.split(token, ".") do
       [version, purpose, payload, footer] ->
-        case Base.decode64(token) do
-          {:ok, payload} ->
-            {:ok,
-             %Token{
-               version: version,
-               purpose: purpose,
-               payload: payload,
-               footer: footer
-             }}
-
-          :error ->
+        with {:ok, decoded_footer} <- Base.url_decode64(footer, padding: false),
+             {:ok, verified_payload} <- _parse_token(version, purpose, payload, key, footer)
+        do
+          {:ok,
+            %Token{
+              version: version,
+              purpose: purpose,
+              payload: verified_payload,
+              footer: decoded_footer
+            }}
+        else
+          {:error, _reason} = error -> error
+          _ ->
             {:error, "Invalid (non-base64 encoded) payload in token."}
         end
 
       [version, purpose, payload] ->
-        case Base.decode64(payload) do
+        case Base.url_decode64(payload, padding: false) do
           {:ok, payload} ->
             {:ok,
              %Token{
@@ -52,6 +54,28 @@ defmodule Paseto do
     end
   end
 
+  @spec _parse_token(String.t(), String.t(), String.t(), String.t(), String.t() | tuple()) :: {:ok, String.t()} | {:error, String.t()}
+  defp _parse_token(version, purpose, payload, key, footer \\ "") do
+    require Logger
+    Logger.debug(payload)
+    case String.downcase(version) do
+      "v1" ->
+        case purpose do
+          "local" -> V1.decrypt(payload, key, footer)
+          "public" ->
+            {pk, _sk} = key
+            V1.verify(payload, pk, footer)
+        end
+      "v2" ->
+        case purpose do
+          "local" -> V2.decrypt(payload, key, footer)
+          "public" ->
+            {pk, _sk} = key
+            V2.verify(payload, pk, footer)
+        end
+    end
+  end
+
   @doc """
   """
   @spec generate_token(String.t(), String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
@@ -60,10 +84,10 @@ defmodule Paseto do
   end
 
   @spec _generate_token(String.t(), String.t(), binary, String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  defp _generate_token(version, "public", payload, secret_key, footer) do
+  defp _generate_token(version, "public", payload, {_pk, sk}, footer) do
     case String.downcase(version) do
-      "v2" -> V2.sign(payload, secret_key, footer)
-      "v1" -> V1.sign(payload, secret_key, footer)
+      "v2" -> V2.sign(payload, sk, footer)
+      "v1" -> V1.sign(payload, sk, footer)
       _ -> {:error, "Invalid version selected. Only v1 & v2 supported."}
     end
   end

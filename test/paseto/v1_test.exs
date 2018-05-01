@@ -9,7 +9,7 @@ defmodule PasetoTest.V1 do
     test "Simple encrypt/decrypt, footerless" do
       message = "Test Message"
       key = "TEST KEY"
-      result = V1.encrypt(message, key)
+      result = V1.encrypt(message, key) |> String.replace("v1.local.", "")
 
       assert V1.decrypt(result, key) == {:ok, message}
     end
@@ -32,7 +32,7 @@ defmodule PasetoTest.V1 do
       signed_token = V1.sign(message, sk)
       payload = String.replace(signed_token, "v1.public.", "")
 
-      assert V1.verify("v1.public.", payload, pk) == {:ok, message}
+      assert V1.verify(payload, pk) == {:ok, message}
     end
 
     test "Simple sign/verify, with footer" do
@@ -42,7 +42,7 @@ defmodule PasetoTest.V1 do
       signed_token = V1.sign(message, sk, footer)
       [_, _, payload, _] = String.split(signed_token, ".")
 
-      assert V1.verify("v1.public.", payload, pk, footer) == {:ok, message}
+      assert V1.verify(payload, pk, footer) == {:ok, message}
     end
 
     test "Invalid PK fails to verify, footerless" do
@@ -52,7 +52,7 @@ defmodule PasetoTest.V1 do
       signed_token = V1.sign(message, sk1)
       payload = String.replace(signed_token, "v1.public.", "")
 
-      assert V1.verify("v1.public.", payload, pk2) == {:error, "Failed to verify signature."}
+      assert V1.verify(payload, pk2) == {:error, "Failed to verify signature."}
     end
 
     test "Invalid PK fails to verify, with footer" do
@@ -63,7 +63,7 @@ defmodule PasetoTest.V1 do
       signed_token = V1.sign(message, sk1, footer)
       [_, _, payload, _] = String.split(signed_token, ".")
 
-      assert V1.verify("v1.public.", payload, pk2, footer) ==
+      assert V1.verify(payload, pk2, footer) ==
                {:error, "Failed to verify signature."}
     end
   end
