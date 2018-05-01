@@ -13,6 +13,18 @@ defmodule Paseto do
   alias Paseto.{Token, V1, V2}
 
   @doc """
+  Handles parsing a token. Providing it just the entire token will return the %Paseto.Token{} struct with all fields populated.
+
+  # Examples:
+  iex> token = "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
+  iex> Paseto.parse_token(token, keypair)
+  {:ok,
+    %Paseto.Token{
+      footer: nil,
+      payload: "This is a test message",
+      purpose: "public",
+      version: "v2"
+    }}
   """
   @spec parse_token(String.t(), binary()) :: {:ok, %Token{}} | {:error, String.t()}
   def parse_token(token, key) do
@@ -30,34 +42,28 @@ defmodule Paseto do
             }}
         else
           {:error, _reason} = error -> error
-          _ ->
-            {:error, "Invalid (non-base64 encoded) payload in token."}
         end
 
       [version, purpose, payload] ->
-        case Base.url_decode64(payload, padding: false) do
-          {:ok, payload} ->
-            {:ok,
-             %Token{
-               version: version,
-               purpose: purpose,
-               payload: payload,
-               footer: nil
-             }}
-
-          :error ->
-            {:error, "Invalid (non-base64 encoded) payload in token."}
+        with {:ok, verified_payload} <- _parse_token(version, purpose, payload, key)
+        do
+          {:ok,
+           %Token{
+             version: version,
+             purpose: purpose,
+             payload: verified_payload,
+             footer: nil
+           }}
+        else
+          {:error, _reason} = error -> error
         end
-
-      _ ->
-        {:error, "Invalid token encountered during token parsing"}
+      {:error, reason} ->
+        {:error, "Invalid token encountered during token parsing: #{reason}"}
     end
   end
 
   @spec _parse_token(String.t(), String.t(), String.t(), String.t(), String.t() | tuple()) :: {:ok, String.t()} | {:error, String.t()}
   defp _parse_token(version, purpose, payload, key, footer \\ "") do
-    require Logger
-    Logger.debug(payload)
     case String.downcase(version) do
       "v1" ->
         case purpose do
@@ -77,6 +83,27 @@ defmodule Paseto do
   end
 
   @doc """
+  Handles generating a token:
+
+  Tokens are broken up into several components:
+  * version: v1 or v2 -- v2 suggested
+  * purpose: Local or Public -- Local -> Symmetric Encryption for payload & Public -> Asymmetric Encryption for payload
+  * payload: A signed or encrypted & b64 encoded string
+  * footer: An optional value, often used for storing keyIDs or other similar info.
+
+  # Examples:
+  iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
+  iex> keypair = {pk, sk}
+  iex> token = generate_token("v2", "public", "This is a test message", keypair)
+  "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
+  iex> Paseto.parse_token(token, keypair)
+  {:ok,
+    %Paseto.Token{
+    footer: nil,
+    payload: "This is a test message",
+    purpose: "public",
+    version: "v2"
+    }} 
   """
   @spec generate_token(String.t(), String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def generate_token(version, purpose, payload, secret_key, footer \\ "") do

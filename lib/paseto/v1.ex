@@ -101,15 +101,16 @@ defmodule Paseto.V1 do
   {:ok, "This is a test message!"}
   """
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
-  def verify(signed_message, [exp, mod] = public_key, footer \\ "")
+  def verify(signed_message, [_exp, mod] = public_key, footer \\ "")
       when byte_size(mod) == 256 do
-    header = "v1.public."
-    with :ok <- valid_header?(:verify, header),
-         {:ok, decoded} <- valid_b64?(:decode, signed_message) do
+    header = "#{@header}.public."
+    with {:ok, decoded} <- valid_b64?(:decode, signed_message),
+         {:ok, decoded_footer} <- b64_decode(footer)
+    do
       message_size = round((byte_size(decoded) - @signature_size / 8) * 8)
       <<message::size(message_size), signature::size(@signature_size)>> = decoded
 
-      m2 = Utils.pre_auth_encode([header, <<message::size(message_size)>>, footer])
+      m2 = Utils.pre_auth_encode([header, <<message::size(message_size)>>, decoded_footer])
 
       case :crypto.verify(
              :rsa,
@@ -159,12 +160,6 @@ defmodule Paseto.V1 do
   defp aead_decrypt(message, header, key, footer) do
     expected_len = String.length(header)
     given_header = String.slice(message, 0..(expected_len - 1))
-
-    footer_len =
-      case footer do
-        "" -> 0
-        _ -> byte_size(footer) + 1 + 1
-      end
 
     decoded =
       case b64_decode(message) do
@@ -223,22 +218,6 @@ defmodule Paseto.V1 do
     case b64_decode(input) do
       {:ok, _decoded} = retval -> retval
       _ -> {:error, "Invalid payload. Payload was not b64 encoded."}
-    end
-  end
-
-  @spec valid_header?(:verify, String.t()) :: :ok | {:error, String.t()}
-  defp valid_header?(:verify, header) do
-    case String.equivalent?(header, "#{@header}.public.") do
-      true -> :ok
-      false -> {:error, "Token doesn't start with correct header"}
-    end
-  end
-
-  @spec valid_header?(:decrypt, String.t()) :: :ok | {:error, String.t()}
-  defp valid_header?(:decrypt, header) do
-    case String.equivalent?(header, "#{@header}.local") do
-      true -> :ok
-      false -> {:error, "Token doesn't start with correct header"}
     end
   end
 end

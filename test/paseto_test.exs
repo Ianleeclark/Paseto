@@ -57,7 +57,7 @@ defmodule PasetoTest do
       assert token.footer == footer
       assert token.version == version
       assert token.purpose == purpose
-      # assert token.payload == payload
+      assert token.payload == plaintext
     end
   end
 end

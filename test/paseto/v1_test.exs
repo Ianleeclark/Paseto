@@ -39,9 +39,9 @@ defmodule PasetoTest.V1 do
       footer = "key-id:533434"
       {pk, sk} = :crypto.generate_key(:rsa, {2048, @public_exponent})
       signed_token = V1.sign(message, sk, footer)
-      [_, _, payload, _] = String.split(signed_token, ".")
+      [_, _, payload, encoded_footer] = String.split(signed_token, ".")
 
-      assert V1.verify(payload, pk, footer) == {:ok, message}
+      assert V1.verify(payload, pk, encoded_footer) == {:ok, message}
     end
 
     test "Invalid PK fails to verify, footerless" do
@@ -60,9 +60,9 @@ defmodule PasetoTest.V1 do
       {_pk1, sk1} = :crypto.generate_key(:rsa, {2048, @public_exponent})
       {pk2, _sk2} = :crypto.generate_key(:rsa, {2048, @public_exponent})
       signed_token = V1.sign(message, sk1, footer)
-      [_, _, payload, _] = String.split(signed_token, ".")
+      [_, _, payload, encoded_footer] = String.split(signed_token, ".")
 
-      assert V1.verify(payload, pk2, footer) ==
+      assert V1.verify(payload, pk2, encoded_footer) ==
                {:error, "Failed to verify signature."}
     end
   end
