@@ -9,6 +9,7 @@ defmodule Paseto.V2 do
   alias Paseto.Token
   alias Paseto.Utils.Utils
   alias Paseto.Utils.Crypto
+  alias Salty.Sign.Ed25519
 
   require Logger
 
@@ -56,24 +57,60 @@ defmodule Paseto.V2 do
   {:ok, "This is a test message"}
   """
   @spec decrypt(String.t(), String.t(), String.t() | nil) ::
-  {:ok, String.t()} | {:error, String.t()}
+          {:ok, String.t()} | {:error, String.t()}
   def decrypt(data, key, footer \\ "") do
     aead_decrypt(data, key, footer)
   end
 
   @doc """
   Handles signing the token for public use.
+
+  # Examples:
+  iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
+  iex> Paseto.V2.sign("Test Message", sk)
+  "v2.public.VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE"
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t()
-  def sign(_data, _secret_key, _footer \\ "") do
+  def sign(data, secret_key, footer \\ "") when byte_size(secret_key) == 64 do
+    h = "v2.public."
+    pre_auth_encode = Utils.pre_auth_encode([h, data, footer])
+
+    {:ok, sig} = Ed25519.sign_detached(pre_auth_encode, secret_key)
+
+    case footer do
+      "" -> h <> b64_encode(data <> sig)
+      _ -> h <> b64_encode(data <> sig) <> "." <> b64_encode(footer)
+    end
   end
 
   @doc """
   Handles verifying the signature belongs to the provided key.
+
+  # Examples:
+  iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
+  iex> Paseto.V2.sign("Test Message", sk)
+  "v2.public.VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE"
+  iex(37)> Paseto.V2.verify("VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE", pk)
+  {:ok, "Test"}
   """
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
-  def verify(_header, _signed_message, [_exp, mod] = _public_key, _footer \\ "")
-  when byte_size(mod) == 256 do
+  def verify(signed_message, public_key, footer \\ "") do
+    decoded_footer =
+      case footer do
+        "" -> ""
+        _ -> b64_decode!(footer)
+      end
+
+    h = "v2.public."
+    decoded_message = b64_decode!(signed_message)
+    data_size = round(byte_size(decoded_message) * 8 - 512)
+    <<data::size(data_size), sig::size(512)>> = decoded_message
+    pre_auth_encode = Utils.pre_auth_encode([h, <<data::size(data_size)>>, decoded_footer])
+
+    case Ed25519.verify_detached(<<sig::size(512)>>, pre_auth_encode, public_key) do
+      :ok -> {:ok, <<data::size(data_size)>>}
+      {:error, _reason} -> {:error, "Failed to verify signature."}
+    end
   end
 
   @spec aead_encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
@@ -114,11 +151,11 @@ defmodule Paseto.V2 do
     pre_auth_encode = Utils.pre_auth_encode([h, <<nonce::size(@nonce_len_bits)>>, decoded_footer])
 
     case Crypto.xchacha20_poly1305_decrypt(
-          ciphertext,
-          pre_auth_encode,
-          <<nonce::size(@nonce_len_bits)>>,
-          key
-        ) do
+           ciphertext,
+           pre_auth_encode,
+           <<nonce::size(@nonce_len_bits)>>,
+           key
+         ) do
       {:ok, plaintext} -> {:ok, plaintext}
       {:error, reason} -> {:error, "Failed to decrypt payload due to: #{reason}"}
     end
