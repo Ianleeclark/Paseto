@@ -57,7 +57,7 @@ defmodule Paseto.V2 do
   {:ok, "This is a test message"}
   """
   @spec decrypt(String.t(), String.t(), String.t() | nil) ::
-  {:ok, String.t()} | {:error, String.t()}
+          {:ok, String.t()} | {:error, String.t()}
   def decrypt(data, key, footer \\ "") do
     aead_decrypt(data, key, footer)
   end
@@ -103,12 +103,12 @@ defmodule Paseto.V2 do
 
     h = "v2.public."
     decoded_message = b64_decode!(signed_message)
-    data_size = round(byte_size(decoded_message)*8 - 512)
-    << data::size(data_size), sig::size(512) >> = decoded_message
-    pre_auth_encode = Utils.pre_auth_encode([h, << data::size(data_size) >>, decoded_footer])
+    data_size = round(byte_size(decoded_message) * 8 - 512)
+    <<data::size(data_size), sig::size(512)>> = decoded_message
+    pre_auth_encode = Utils.pre_auth_encode([h, <<data::size(data_size)>>, decoded_footer])
 
-    case Ed25519.verify_detached(<< sig::size(512) >>, pre_auth_encode, public_key) do
-      :ok -> {:ok, << data::size(data_size) >>}
+    case Ed25519.verify_detached(<<sig::size(512)>>, pre_auth_encode, public_key) do
+      :ok -> {:ok, <<data::size(data_size)>>}
       {:error, _reason} -> {:error, "Failed to verify signature."}
     end
   end
@@ -151,11 +151,11 @@ defmodule Paseto.V2 do
     pre_auth_encode = Utils.pre_auth_encode([h, <<nonce::size(@nonce_len_bits)>>, decoded_footer])
 
     case Crypto.xchacha20_poly1305_decrypt(
-          ciphertext,
-          pre_auth_encode,
-          <<nonce::size(@nonce_len_bits)>>,
-          key
-        ) do
+           ciphertext,
+           pre_auth_encode,
+           <<nonce::size(@nonce_len_bits)>>,
+           key
+         ) do
       {:ok, plaintext} -> {:ok, plaintext}
       {:error, reason} -> {:error, "Failed to decrypt payload due to: #{reason}"}
     end
