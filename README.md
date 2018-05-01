@@ -1,7 +1,7 @@
 # Paseto
 [![CircleCI](https://circleci.com/gh/GrappigPanda/Paseto/tree/master.svg?style=svg)](https://circleci.com/gh/GrappigPanda/Paseto/tree/master)
 
-This repository houses an elixir implementation of of [[https://github.com/paragonie/paseto][Paseto]]
+This repository houses an elixir implementation of [![Paseto](https://github.com/paragonie/paseto)]
 
 From the reference implementation of Paseto:
 
@@ -114,7 +114,7 @@ iex> Paseto.parse_token(token, keypair)
 """
 ```
 
-More info can be found in the [[https://hexdocs.pm/paseto/api-reference.html][docs]]
+More info can be found in the [![HexDocs](https://hexdocs.pm/paseto/api-reference.html)]
 
 ## Installation
 
@@ -143,12 +143,7 @@ by adding `paseto` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:paseto, "~> 0.1.0"}
+    {:paseto, "~> 0.2.0"}
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/paseto](https://hexdocs.pm/paseto).
-
