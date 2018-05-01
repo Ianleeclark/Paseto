@@ -1,7 +1,8 @@
 # Paseto
 [![CircleCI](https://circleci.com/gh/GrappigPanda/Paseto/tree/master.svg?style=svg)](https://circleci.com/gh/GrappigPanda/Paseto/tree/master)
+[![Hex.pm](https://img.shields.io/hexpm/v/plug.svg)](https://hex.pm/packages/paseto)
 
-This repository houses an elixir implementation of [![Paseto](https://github.com/paragonie/paseto)]
+This repository houses an elixir implementation of ![Paseto](https://github.com/paragonie/paseto)
 
 From the reference implementation of Paseto:
 
@@ -114,7 +115,7 @@ iex> Paseto.parse_token(token, keypair)
 """
 ```
 
-More info can be found in the [![HexDocs](https://hexdocs.pm/paseto/api-reference.html)]
+More info can be found in the ![HexDocs](https://hexdocs.pm/paseto/api-reference.html)
 
 ## Installation
 
