@@ -13,6 +13,22 @@ defmodule Paseto do
   alias Paseto.{Token, V1, V2}
 
   @doc """
+  """
+  @spec peek(String.t()) :: {:ok, String.t()} | {:error, atom()}
+  def peek(token) do
+    case token do
+      "v1.local." <> _rest ->
+        {:error, :no_peek_for_encrypted_tokens}
+      "v2.local." <> _rest ->
+        {:error, :no_peek_for_encrypted_tokens}
+      "v1.public." <> _rest ->
+        Paseto.V1.extract_message(token)
+      "v2.public." <> _rest ->
+        Paseto.V1.extract_message(token)
+    end
+  end
+
+  @doc """
   Handles parsing a token. Providing it just the entire token will return the %Paseto.Token{} struct with all fields populated.
 
   # Examples:
