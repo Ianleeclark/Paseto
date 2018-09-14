@@ -71,7 +71,7 @@ defmodule Paseto.V1 do
 
   # Examples:
       iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
-      iex> V1.sign("This is a test message!", secret_key)
+      iex> Paseto.V1.sign("This is a test message!", secret_key)
       "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t()
@@ -96,7 +96,7 @@ defmodule Paseto.V1 do
 
   # Examples:
       iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
-      iex> token = V1.sign("This is a test message!", secret_key)
+      iex> token = Paseto.V1.sign("This is a test message!", secret_key)
       "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
       iex> [version, purpose, payload] = String.split(token, ".")
       iex> V1.verify(version <> "." <> purpose <> ".", payload, public_key)
@@ -132,6 +132,35 @@ defmodule Paseto.V1 do
       {:error, _reason} = err -> err
     end
   end
+
+  @spec get_claims_from_signed_message(signed_message :: String.t()) :: String.t()
+  defp get_claims_from_signed_message(signed_message) do
+    with {:ok, decoded} <- valid_b64?(:decode, signed_message) do
+      message_size = round((byte_size(decoded) - @signature_size / 8) * 8)
+      <<message::size(message_size), _signature::size(@signature_size)>> = decoded
+
+      <<message::size(message_size)>>
+    else
+      {:error, _reason} = err -> err
+    end
+  end
+
+  @doc """
+  Allows looking at the claims without having verified them.
+  """
+  @spec peek(token :: String.t()) :: String.t()
+  def peek(token) do
+    case String.split(token, ".") do
+      [_version, _purpose, payload] ->
+        get_claims_from_signed_message(payload)
+      [_version, _purpose, payload, _footer] ->
+        get_claims_from_signed_message(payload)
+    end
+  end
+
+  ##############################
+  # Internal Private Functions #
+  ##############################
 
   @spec aead_encrypt(String.t(), String.t(), String.t() | nil) :: String.t()
   defp aead_encrypt(plaintext, key, footer) do

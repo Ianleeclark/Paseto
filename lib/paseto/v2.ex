@@ -45,6 +45,7 @@ defmodule Paseto.V2 do
   # Examples:
       iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188, 168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
       iex> Paseto.V2.encrypt("This is a test message", key)
+      "v2.local.voHwaLKK64eSfnCGoJuxJvoyncIpDrg2AkFbRTBeOOBdytn8XoRtl_sRORjlGdTvPageE38TR7dVlv5wxw0"
   """
   @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
   def encrypt(data, key, footer \\ "") do
@@ -57,7 +58,7 @@ defmodule Paseto.V2 do
   # Examples:
       iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188, 168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
       iex> Paseto.V2.decrypt("AUfxx2uuiOXEXnYlMCzesBUohpewQTQQURBonherEWHcRgnaJfMfZXCt96hciML5PN9ozels1bnPidmFvVc", key)
-      "{:ok, "This is a test message"}"
+      {:ok, "This is a test message"}
   """
   @spec decrypt(String.t(), String.t(), String.t() | nil) ::
           {:ok, String.t()} | {:error, String.t()}
@@ -114,6 +115,32 @@ defmodule Paseto.V2 do
       :ok -> {:ok, <<data::size(data_size)>>}
       {:error, _reason} -> {:error, "Failed to verify signature."}
     end
+  end
+
+  @doc """
+  Allows looking at the claims without having verified them.
+  """
+  @spec peek(token :: String.t()) :: String.t()
+  def peek(token) do
+    case String.split(token, ".") do
+      [_version, _purpose, payload] ->
+        get_claims_from_signed_message(payload)
+      [_version, _purpose, payload, _footer] ->
+        get_claims_from_signed_message(payload)
+    end
+  end
+
+  ##############################
+  # Internal Private Functions #
+  ##############################
+
+  @spec get_claims_from_signed_message(signed_message :: String.t()) :: String.t()
+  def get_claims_from_signed_message(signed_message) do
+    decoded_message = b64_decode!(signed_message)
+    data_size = round(byte_size(decoded_message) * 8 - 512)
+    <<data::size(data_size), _sig::size(512)>> = decoded_message
+
+    <<data::size(data_size)>>
   end
 
   @spec aead_encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}

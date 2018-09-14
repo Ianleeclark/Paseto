@@ -3,6 +3,7 @@ defmodule Paseto.VersionBehaviour do
 
   # Housekeeping/general functionality
   @callback from_token(%Paseto.Token{}) :: any()
+  @callback peek(String.t()) :: String.t()
 
   # Local Operations
   @callback encrypt(String.t(), binary, String.t()) :: String.t() | {:error, String.t()}

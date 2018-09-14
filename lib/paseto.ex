@@ -22,9 +22,9 @@ defmodule Paseto do
       "v2.local." <> _rest ->
         {:error, :no_peek_for_encrypted_tokens}
       "v1.public." <> _rest ->
-        Paseto.V1.extract_message(token)
+        V1.peek(token)
       "v2.public." <> _rest ->
-        Paseto.V1.extract_message(token)
+        V2.peek(token)
     end
   end
 
