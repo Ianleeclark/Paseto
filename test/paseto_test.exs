@@ -66,6 +66,7 @@ defmodule PasetoTest do
       case token.purpose do
         "local" ->
           assert Paseto.peek(generated_token) == {:error, :no_peek_for_encrypted_tokens}
+
         "public" ->
           assert Paseto.peek(generated_token) == plaintext
       end

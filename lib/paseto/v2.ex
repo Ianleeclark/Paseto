@@ -125,6 +125,7 @@ defmodule Paseto.V2 do
     case String.split(token, ".") do
       [_version, _purpose, payload] ->
         get_claims_from_signed_message(payload)
+
       [_version, _purpose, payload, _footer] ->
         get_claims_from_signed_message(payload)
     end
