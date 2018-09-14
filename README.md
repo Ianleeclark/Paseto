@@ -37,6 +37,12 @@ library to work on any computer:
 3. openssl >= 1.1 
     * This is needed for XChaCha-Poly1305 used for V2.Local Paseto
 
+## Want to use this library through Guardian or Plugs?
+
+Check out some of my other libraries:
+* https://github.com/GrappigPanda/paseto_plug
+* https://github.com/GrappigPanda/guardian_paseto
+
 ### Paseto
 
 #### Paseto Example 1
@@ -158,7 +164,7 @@ by adding `paseto` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:paseto, "~> 0.3.0"}
+    {:paseto, "~> 1.1.0"}
   ]
 end
 ```
