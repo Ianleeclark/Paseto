@@ -24,6 +24,19 @@ use Paseto in [an insecure way](https://auth0.com/blog/critical-vulnerabilities-
 > Paseto is suitable for tamper-proof cookies, but cannot prevent replay attacks
 > by itself.
 
+## Considerations for using this library
+
+There are a few library/binary requirements required in order for the Paseto 
+library to work on any computer:
+1. Erlang version >= 20.1
+    * This is required because this was the first Erlang version to introduce
+      crypto:sign/5.
+2. libsodium >= 1.0.13 
+    * This is required for cryptography used in Paseto.
+    * This can be found at https://github.com/jedisct1/libsodium
+3. openssl >= 1.1 
+    * This is needed for XChaCha-Poly1305 used for V2.Local Paseto
+
 ### Paseto
 
 #### Paseto Example 1
