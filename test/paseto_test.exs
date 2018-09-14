@@ -44,17 +44,17 @@ defmodule PasetoTest do
               footer <- StreamData.string(:ascii, min_length: 1),
               plaintext <- StreamData.string(:ascii, min_length: 1),
               key = key_generator(version, purpose),
-              token = Paseto.generate_token(version, purpose, plaintext, key, footer),
+              generated_token = Paseto.generate_token(version, purpose, plaintext, key, footer),
               max_runs: 500 do
       header = version <> "." <> purpose <> "."
-      assert String.starts_with?(token, header)
-      assert String.ends_with?(token, "." <> Base.url_encode64(footer, padding: false))
+      assert String.starts_with?(generated_token, header)
+      assert String.ends_with?(generated_token, "." <> Base.url_encode64(footer, padding: false))
 
-      x = Paseto.parse_token(token, key)
+      x = Paseto.parse_token(generated_token, key)
 
       token =
         case x do
-          {:ok, token} -> token
+          {:ok, new_token} -> new_token
           {:error, reason} -> flunk("Failed to parse token due to: #{reason}")
         end
 
@@ -62,6 +62,13 @@ defmodule PasetoTest do
       assert token.version == version
       assert token.purpose == purpose
       assert token.payload == plaintext
+
+      case token.purpose do
+        "local" ->
+          assert Paseto.peek(generated_token) == {:error, :no_peek_for_encrypted_tokens}
+        "public" ->
+          assert Paseto.peek(generated_token) == plaintext
+      end
     end
   end
 end
