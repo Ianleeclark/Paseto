@@ -115,11 +115,19 @@ To learn what each version means, please see [this page in the documentation](ht
 ```elixir
 iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
 iex> keypair = {pk, sk}
-iex> token = generate_token("v2", "public", "This is a test message", keypair)
+iex> token = Paseto.generate_token("v2", "public", "This is a test message", keypair)
 "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
 ```
 
 In short, we generate a keypair using libsalty (libsodium elixir bindings) and generate the token using that keypair.
+
+P.S. If you're confused about how to serialize the above keys, you can use [Hexate](https://github.com/rjsamson/hexate) which is a dependency of this project:
+
+```elixir
+iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
+iex> pk |> Hexate.encode()
+"a17c258ffdd864b3614bd445465ff96e0b16e8509e28e7ba60734f7c433ab7e8"
+```
 
 ### Parsing a token
 ```elixir
