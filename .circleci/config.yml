@@ -10,24 +10,24 @@ jobs:
 
     steps:
       - checkout
-      - run: wget https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.13.tar.gz
+      - run: wget -O libsodium.tar.gz https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.13.tar.gz
       - restore_cache:
           keys:
-            - libsodium-tarball-{{ checksum "libsodium*.tar.gz" }}
+            - libsodium-tarball-{{ checksum "libsodium.tar.gz" }}
             - libsodium-tarball-
             - libsodium
 
       - run: .circleci/install_libsodium.sh
 
       - save_cache:
-          key: libsodium-{{ checksum "libsodium*.tar.gz" }}
+          key: libsodium-{{ checksum "libsodium.tar.gz" }}
           paths:
-            - libsodium*.tar.gz
+            - libsodium.tar.gz
 
       - save_cache:
           key: libsodium
           paths:
-            - /usr/local/lib/libsodium*.tar.gz
+            - /usr/local/lib/libsodium.tar.gz
 
       - run: mix local.hex --force  # install Hex locally (without prompt)
       - run: mix local.rebar --force  # fetch a copy of rebar (without prompt)
