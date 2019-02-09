@@ -14,6 +14,9 @@ jobs:
           keys:
             - libsodium-tarball-{{ checksum ".circleci/deps/libsodium.tar.gz" }}
             - libsodium-tarball-
+
+      - restore_cache:
+          keys:
             - libsodium
 
       - run: .circleci/install_libsodium.sh
