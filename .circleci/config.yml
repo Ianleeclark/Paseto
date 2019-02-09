@@ -15,8 +15,8 @@ jobs:
           keys:
             - libsodiumso-{{ checksum ".circleci/deps/libsodium.tar.gz" }}
 
-      - run: ls -al /usr/local/lib
-      - run: ls -al .
+      - run: ls /usr/local/lib
+      - run: ls  .
 
       - run: .circleci/install_libsodium.sh
 
