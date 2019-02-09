@@ -10,10 +10,23 @@ jobs:
 
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - libsodium-tarball-{{ checksum "libsodium*.tar.gz" }}
+            - libsodium-tarball-
+            - libsodium
 
-      - run: wget https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.13.tar.gz
-      - run: tar xf libsodium-1.0.13.tar.gz
-      - run: cd libsodium-1.0.13; ./configure; make; sudo make install
+      - run
+
+      - save_cache:
+          key: libsodium-{{ checksum "libsodium*.tar.gz" }}
+          paths:
+            - libsodium*.tar.gz
+
+      - save_cache:
+          key: libsodium
+          paths:
+            - /usr/local/lib/libsodium*.tar.gz
 
       - run: mix local.hex --force  # install Hex locally (without prompt)
       - run: mix local.rebar --force  # fetch a copy of rebar (without prompt)
