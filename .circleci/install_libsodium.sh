@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-ls -al /usr/local/lib
-ls -al
 if [ -f libsodium.so ]; then
     sudo mv libsodium.so /usr/local/lib/libsodium.so
 fi
