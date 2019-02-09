@@ -21,7 +21,7 @@ jobs:
           paths:
             - libsodium.tar.gz
 
-      - run: cp -Lr libsodium.so libsodium-contents.so; rm libsodium.so; mv libsodium-contents.so libsodium
+      - run: cp -Lr /usr/local/lib/libsodium.so libsodium-contents.so; rm /usr/local/lib/libsodium.so; mv libsodium-contents.so /usr/local/lib/libsodium
 
       - run: mix local.hex --force  # install Hex locally (without prompt)
       - run: mix local.rebar --force  # fetch a copy of rebar (without prompt)
