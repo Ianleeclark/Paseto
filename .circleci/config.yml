@@ -16,18 +16,9 @@ jobs:
 
       - restore_cache:
           keys:
-            - libsodium
-
-      - restore_cache:
-          keys:
-            - paseto-deps-{{ checksum "mix.exs" }}
+            - libsodium-so
 
       - run: .circleci/install_libsodium.sh
-
-      - save_cache:
-          key: paseto-deps-{{ checksum "mix.exs" }}
-          paths:
-            - ./deps
 
       - save_cache:
           key: libsodium-tarball-{{ checksum ".circleci/deps/libsodium.tar.gz" }}
@@ -35,7 +26,7 @@ jobs:
             - libsodium.tar.gz
 
       - save_cache:
-          key: libsodium
+          key: libsodium-so
           paths:
             - /usr/local/lib/libsodium.so
 
