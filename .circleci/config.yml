@@ -9,7 +9,6 @@ jobs:
       - image: circleci/elixir:1.5
 
     steps:
-      - checkout
       - restore_cache:
           keys:
             - libsodium-tarball-{{ checksum ".circleci/deps/libsodium.tar.gz" }}
@@ -19,10 +18,21 @@ jobs:
           keys:
             - libsodium
 
+      - restore_cache:
+          keys:
+            - paseto-deps-{{ checksum "mix.exs" }}
+
+      - checkout
+
       - run: .circleci/install_libsodium.sh
 
       - save_cache:
-          key: libsodium-{{ checksum ".circleci/deps/libsodium.tar.gz" }}
+          key: paseto-deps-{{ checksum "mix.exs" }}
+          paths:
+            - ./deps
+
+      - save_cache:
+          key: libsodium-tarball-{{ checksum ".circleci/deps/libsodium.tar.gz" }}
           paths:
             - libsodium.tar.gz
 
