@@ -14,6 +14,10 @@ jobs:
           keys:
             - libsodium-tarball-{{ checksum ".circleci/deps/libsodium.tar.gz" }}
 
+      - restore_cache:
+          keys:
+            - libsodiumso-{{ checksum ".circleci/deps/libsodium.tar.gz" }}
+
       - run: .circleci/install_libsodium.sh
 
       - save_cache:
@@ -22,6 +26,11 @@ jobs:
             - libsodium.tar.gz
 
       - run: cp -Lr /usr/local/lib/libsodium.so libsodium-contents.so; sudo rm /usr/local/lib/libsodium.so; sudo mv libsodium-contents.so /usr/local/lib/libsodium
+
+      - save_cache:
+          key: libsodiumso-{{ checksum ".circleci/deps/libsodium.tar.gz" }}
+          paths:
+            - /usr/local/lib/libsodium.so
 
       - run: mix local.hex --force  # install Hex locally (without prompt)
       - run: mix local.rebar --force  # fetch a copy of rebar (without prompt)
