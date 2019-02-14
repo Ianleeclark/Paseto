@@ -12,7 +12,7 @@ defmodule Paseto.V2 do
   @behaviour Paseto.VersionBehaviour
 
   alias Paseto.Token
-  alias Paseto.Utils.Utils
+  alias Paseto.Utils
   alias Paseto.Utils.Crypto
   alias Salty.Sign.Ed25519
 

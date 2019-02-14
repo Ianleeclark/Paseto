@@ -9,7 +9,7 @@ defmodule Paseto.V1 do
   @behaviour Paseto.VersionBehaviour
 
   alias Paseto.Token
-  alias Paseto.Utils.Utils
+  alias Paseto.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
 
   @required_keys [:version, :purpose, :payload]

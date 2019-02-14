@@ -1,8 +1,8 @@
 defmodule PasetoTest.Utils do
   use ExUnit.Case
-  doctest Paseto.Utils.Utils
+  doctest Paseto.Utils
 
-  alias Paseto.Utils.Utils
+  alias Paseto.Utils
 
   describe "pre auth encode tests" do
     test "empty list encoding" do

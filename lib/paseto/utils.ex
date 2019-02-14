@@ -1,4 +1,4 @@
-defmodule Paseto.Utils.Utils do
+defmodule Paseto.Utils do
   @moduledoc false
 
   use Bitwise
