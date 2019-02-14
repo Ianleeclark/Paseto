@@ -27,7 +27,7 @@ defmodule Paseto.MixProject do
       {:blake2, "~> 1.0"},
       {:salty, "~> 0.1.3", hex: :libsalty},
       {:stream_data, "~> 0.1", only: :test},
-      {:ex_doc, "~> 0.16", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
 

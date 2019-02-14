@@ -7,6 +7,7 @@ defmodule Paseto.Utils do
   Handles padding multi-part messages before they're sent off to a cryptographic function.
 
   NOTE: this is currently used in both v1 and v2 protocols.
+
   NOTE: There's a 99% chance you're using this library incorrectly if you are calling this function.
   """
   @spec pre_auth_encode([String.t()]) :: String.t()
