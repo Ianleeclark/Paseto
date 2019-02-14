@@ -121,11 +121,12 @@ iex> token = Paseto.generate_token("v2", "public", "This is a test message", key
 
 In short, we generate a keypair using libsalty (libsodium elixir bindings) and generate the token using that keypair.
 
-P.S. If you're confused about how to serialize the above keys, you can use [Hexate](https://github.com/rjsamson/hexate) which is a dependency of this project:
+P.S. If you're confused about how to serialize the above keys, you can use functions
+from the [`Base`](https://hexdocs.pm/elixir/Base.html) module:
 
 ```elixir
 iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
-iex> pk |> Hexate.encode()
+iex> pk |> Base.encode16(case: :lower)
 "a17c258ffdd864b3614bd445465ff96e0b16e8509e28e7ba60734f7c433ab7e8"
 ```
 
