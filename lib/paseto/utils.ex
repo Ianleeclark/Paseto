@@ -24,6 +24,48 @@ defmodule Paseto.Utils do
       end)
   end
 
+  @doc """
+  Encode a binary string into a base64url encoded string (without padding).
+
+  ## Examples
+
+      iex> Paseto.Utils.b64_encode(<<206, 158, 75, 219, 56, 182, 139, 177>>)
+      "zp5L2zi2i7E"
+  """
+  @spec b64_encode(binary()) :: binary()
+  def b64_encode(input) when is_binary(input), do: Base.url_encode64(input, padding: false)
+
+  @doc """
+  Decode a base64url encoded string (without padding) into a binary string.
+
+  ## Examples
+
+      iex> Paseto.Utils.b64_decode("zp5L2zi2i7E")
+      {:ok, <<206, 158, 75, 219, 56, 182, 139, 177>>}
+
+      iex> Paseto.Utils.b64_decode("bad input")
+      :error
+  """
+  @spec b64_decode(binary()) :: {:ok, binary()} | :error
+  def b64_decode(input) when is_binary(input), do: Base.url_decode64(input, padding: false)
+
+  @doc """
+  Decode a base64url encoded string (without padding) into a binary string.
+
+  An `ArgumentError` exception is raised if the padding is incorrect or a
+  non-alphabet character is present in the string.
+
+  ## Examples
+
+      iex> Paseto.Utils.b64_decode!("zp5L2zi2i7E")
+      <<206, 158, 75, 219, 56, 182, 139, 177>>
+
+      iex> Paseto.Utils.b64_decode!("bad input")
+      ** (ArgumentError) non-alphabet digit found: \" \" (byte 32)
+  """
+  @spec b64_decode(binary()) :: binary()
+  def b64_decode!(input) when is_binary(input), do: Base.url_decode64!(input, padding: false)
+
   @spec le64(number) :: any
   defp le64(chunk) do
     # Performs Little Endian 64 bit encoding

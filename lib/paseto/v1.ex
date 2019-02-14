@@ -12,6 +12,8 @@ defmodule Paseto.V1 do
   alias Paseto.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
 
+  import Paseto.Utils, only: [b64_encode: 1, b64_decode: 1, b64_decode!: 1]
+
   @required_keys [:version, :purpose, :payload]
   @all_keys @required_keys ++ [:footer]
 
@@ -235,15 +237,6 @@ defmodule Paseto.V1 do
   defp get_nonce(m, n) do
     PasetoCrypto.hmac_sha384(n, m, 32)
   end
-
-  @spec b64_encode(binary) :: binary
-  defp b64_encode(input) when is_binary(input), do: Base.url_encode64(input, padding: false)
-
-  @spec b64_decode(binary) :: binary
-  defp b64_decode(input) when is_binary(input), do: Base.url_decode64(input, padding: false)
-
-  @spec b64_decode(binary) :: binary
-  defp b64_decode!(input) when is_binary(input), do: Base.url_decode64!(input, padding: false)
 
   @spec valid_b64?(atom(), binary) :: {:ok, binary} | {:error, String.t()}
   defp valid_b64?(:decode, input) do

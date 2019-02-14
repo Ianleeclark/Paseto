@@ -1,5 +1,7 @@
 defmodule PasetoTest.Utils do
   use ExUnit.Case
+  use ExUnitProperties
+
   doctest Paseto.Utils
 
   alias Paseto.Utils
@@ -25,6 +27,21 @@ defmodule PasetoTest.Utils do
 
     test "array of two empty strings" do
       assert Utils.pre_auth_encode(["", ""]) == "020000000000000000000000000000000000000000000000"
+    end
+  end
+
+  describe "base64url encoding/decoding" do
+    test "Decoding malformed strings" do
+      assert Utils.b64_decode("bad input") == :error
+      assert_raise ArgumentError, fn -> Utils.b64_decode!("bad input") end
+    end
+
+    property "b64_decode!(b64_encode(binary)) == binary" do
+      check all input <- StreamData.binary(min_length: 1),
+                encoded = Utils.b64_encode(input) do
+        assert input == Utils.b64_decode!(encoded)
+        assert {:ok, ^input} = Utils.b64_decode(encoded)
+      end
     end
   end
 end

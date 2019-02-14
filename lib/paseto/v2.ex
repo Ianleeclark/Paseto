@@ -16,6 +16,8 @@ defmodule Paseto.V2 do
   alias Paseto.Utils.Crypto
   alias Salty.Sign.Ed25519
 
+  import Paseto.Utils, only: [b64_encode: 1, b64_decode!: 1]
+
   require Logger
 
   @required_keys [:version, :purpose, :payload]
@@ -191,10 +193,4 @@ defmodule Paseto.V2 do
       {:error, reason} -> {:error, "Failed to decrypt payload due to: #{reason}"}
     end
   end
-
-  @spec b64_encode(binary) :: binary
-  defp b64_encode(input) when is_binary(input), do: Base.url_encode64(input, padding: false)
-
-  @spec b64_decode!(binary) :: binary
-  defp b64_decode!(input) when is_binary(input), do: Base.url_decode64!(input, padding: false)
 end
