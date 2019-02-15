@@ -120,4 +120,25 @@ defmodule Paseto.Utils do
         {:error, "Invalid token format"}
     end
   end
+
+  @doc """
+  Create a token string by encoding the token parts using the base64url encoding.
+
+  ## Examples
+     iex> Paseto.Utils.b64_encode_token("v2.local.", "message")
+     "v2.local.bWVzc2FnZQ"
+
+     iex> Paseto.Utils.b64_encode_token("v1.public.", "message", "footer")
+     "v1.public.bWVzc2FnZQ.Zm9vdGVy"
+  """
+  def b64_encode_token(header, message, footer \\ "") do
+    footer =
+      if footer == "" do
+        footer
+      else
+        "." <> b64_encode(footer)
+      end
+
+    header <> b64_encode(message) <> footer
+  end
 end

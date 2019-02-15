@@ -16,7 +16,7 @@ defmodule Paseto.V2 do
   alias Paseto.Utils.Crypto
   alias Salty.Sign.Ed25519
 
-  import Paseto.Utils, only: [b64_encode: 1, b64_decode!: 1]
+  import Paseto.Utils, only: [b64_decode!: 1]
 
   require Logger
 
@@ -83,10 +83,7 @@ defmodule Paseto.V2 do
 
     {:ok, sig} = Ed25519.sign_detached(pre_auth_encode, secret_key)
 
-    case footer do
-      "" -> @header_public <> b64_encode(data <> sig)
-      _ -> @header_public <> b64_encode(data <> sig) <> "." <> b64_encode(footer)
-    end
+    Utils.b64_encode_token(@header_public, data <> sig, footer)
   end
 
   @doc """
@@ -150,10 +147,7 @@ defmodule Paseto.V2 do
 
     {:ok, ciphertext} = Crypto.xchacha20_poly1305_encrypt(data, pre_auth_encode, nonce, key)
 
-    case footer do
-      "" -> @header_local <> b64_encode(nonce <> ciphertext)
-      _ -> @header_local <> b64_encode(nonce <> ciphertext) <> "." <> b64_encode(footer)
-    end
+    Utils.b64_encode_token(@header_local, nonce <> ciphertext, footer)
   end
 
   @spec aead_decrypt(String.t(), binary, String.t()) :: {:ok, String.t()} | {:error, String.t()}

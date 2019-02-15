@@ -12,7 +12,7 @@ defmodule Paseto.V1 do
   alias Paseto.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
 
-  import Paseto.Utils, only: [b64_encode: 1, b64_decode: 1, b64_decode!: 1]
+  import Paseto.Utils, only: [b64_decode: 1, b64_decode!: 1]
 
   @required_keys [:version, :purpose, :payload]
   @all_keys @required_keys ++ [:footer]
@@ -88,10 +88,7 @@ defmodule Paseto.V1 do
         {:rsa_mgf1_md, @hash_algo}
       ])
 
-    case footer do
-      "" -> @header_public <> b64_encode(data <> signature)
-      _ -> @header_public <> b64_encode(data <> signature) <> "." <> b64_encode(footer)
-    end
+    Utils.b64_encode_token(@header_public, data <> signature, footer)
   end
 
   @doc """
@@ -182,14 +179,7 @@ defmodule Paseto.V1 do
       |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
-    case footer do
-      "" ->
-        @header_local <> b64_encode(nonce <> ciphertext <> pre_auth_hash)
-
-      _ ->
-        @header_local <>
-          b64_encode(nonce <> ciphertext <> pre_auth_hash) <> "." <> b64_encode(footer)
-    end
+    Utils.b64_encode_token(@header_local, nonce <> ciphertext <> pre_auth_hash, footer)
   end
 
   @spec aead_decrypt(String.t(), String.t(), String.t(), String.t() | nil) :: String.t()

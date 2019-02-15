@@ -52,7 +52,7 @@ defmodule Paseto do
            Utils.parse_token(token),
          {:ok, verified_payload} <- _parse_token(version, purpose, payload, key, footer) do
       decoded_footer =
-        if footer == <<>> do
+        if footer == "" do
           nil
         else
           Utils.b64_decode!(footer)
