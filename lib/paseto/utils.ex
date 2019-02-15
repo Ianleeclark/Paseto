@@ -4,25 +4,36 @@ defmodule Paseto.Utils do
   use Bitwise
 
   @doc """
+  A binary match pattern shortcut to encode a 64-bit unsigned integer into a
+  little-endian binary string.
+
+  ## Examples
+
+      iex> import Paseto.Utils, only: :macros
+      iex> <<42 :: le64>>
+      <<42, 0, 0, 0, 0, 0, 0, 0>>
+  """
+  defmacro le64 do
+    quote do: unsigned - little - integer - 64
+  end
+
+  @doc """
   Handles padding multi-part messages before they're sent off to a cryptographic function.
 
   NOTE: this is currently used in both v1 and v2 protocols.
 
   NOTE: There's a 99% chance you're using this library incorrectly if you are calling this function.
-  """
-  @spec pre_auth_encode([String.t()]) :: String.t()
-  def pre_auth_encode(pieces) when is_list(pieces) do
-    convert(le64(Enum.count(pieces))) <>
-      Enum.into(pieces, <<>>, fn piece ->
-        case piece do
-          {piece_msg, size_in_bytes} ->
-            convert(le64(round(size_in_bytes / 8))) <>
-              Base.encode16(<<piece_msg::size(size_in_bytes)>>)
 
-          piece ->
-            convert(le64(byte_size(piece))) <> Base.encode16(piece)
-        end
-      end)
+  ## Examples
+
+      iex> Paseto.Utils.pre_auth_encode(["Paragon"])
+      "\x01\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00Paragon"
+  """
+  @spec pre_auth_encode([String.t()]) :: binary()
+  def pre_auth_encode(pieces) when is_list(pieces) do
+    Enum.into(pieces, <<Enum.count(pieces)::le64>>, fn piece ->
+      <<byte_size(piece)::le64>> <> piece
+    end)
   end
 
   @doc """
@@ -66,30 +77,4 @@ defmodule Paseto.Utils do
   """
   @spec b64_decode(binary()) :: binary()
   def b64_decode!(input) when is_binary(input), do: Base.url_decode64!(input, padding: false)
-
-  @spec le64(number) :: any
-  defp le64(chunk) do
-    # Performs Little Endian 64 bit encoding
-
-    Enum.into(0..7, <<>>, fn x ->
-      chunk2 =
-        if x == 7 do
-          chunk &&& 127
-        else
-          chunk
-        end
-
-      <<chunk2 >>> (x * 8) &&& 255>>
-    end)
-  end
-
-  @spec convert(binary) :: String.t()
-  defp convert(<<x::8>>) do
-    x |> Integer.to_string(16) |> String.pad_leading(2, "0")
-  end
-
-  @spec convert(binary) :: String.t()
-  defp convert(<<x::8, rest::binary>>) do
-    (x |> Integer.to_string(16) |> String.pad_leading(2, "0")) <> convert(rest)
-  end
 end

@@ -205,27 +205,24 @@ defmodule Paseto.V1 do
       end
 
     length = byte_size(decoded)
-    ciphertext_len = (length - @nonce_size - @mac_size) * 8
+    ciphertext_len = length - @nonce_size - @mac_size
     footer = b64_decode!(footer)
 
-    <<nonce::256, ciphertext::size(ciphertext_len), mac::384>> = decoded
-    <<leftmost::128, rightmost::128>> = <<nonce::256>>
+    <<nonce::binary-size(@nonce_size), ciphertext::binary-size(ciphertext_len), mac::384>> =
+      decoded
+
+    <<leftmost::128, rightmost::128>> = nonce
 
     ek = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-encryption-key")
     ak = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
 
     calc =
-      [header, {nonce, @nonce_size * 8}, {ciphertext, ciphertext_len}, footer]
+      [header, nonce, ciphertext, footer]
       |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
     if calc == <<mac::384>> do
-      plaintext =
-        PasetoCrypto.aes_256_ctr_decrypt(
-          ek,
-          <<ciphertext::size(ciphertext_len)>>,
-          <<rightmost::128>>
-        )
+      plaintext = PasetoCrypto.aes_256_ctr_decrypt(ek, ciphertext, <<rightmost::128>>)
 
       {:ok, plaintext}
     else
