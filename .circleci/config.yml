@@ -1,23 +1,14 @@
-# Elixir CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-elixir/ for more details
 version: 2
 jobs:
   build:
     docker:
-      # specify the version here
-      - image: circleci/elixir:1.5
+      - image: smaximov/elixir-libsodium:1.8.1-alpine
+        environment:
+          MIX_ENV: test
 
     steps:
       - checkout
 
-      - run: wget https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.13.tar.gz
-      - run: tar xf libsodium-1.0.13.tar.gz
-      - run: cd libsodium-1.0.13; ./configure; make; sudo make install
-
-      - run: mix local.hex --force  # install Hex locally (without prompt)
-      - run: mix local.rebar --force  # fetch a copy of rebar (without prompt)
-
-      - run: mix deps.get
+      - run: mix do deps.get --only test, compile
       - run: mix test
       - run: mix credo
