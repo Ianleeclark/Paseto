@@ -120,13 +120,9 @@ defmodule Paseto.V2 do
   """
   @spec peek(token :: String.t()) :: String.t()
   def peek(token) do
-    case String.split(token, ".") do
-      [_version, _purpose, payload] ->
-        get_claims_from_signed_message(payload)
+    {:ok, %Paseto.Token{payload: payload}} = Utils.parse_token(token)
 
-      [_version, _purpose, payload, _footer] ->
-        get_claims_from_signed_message(payload)
-    end
+    get_claims_from_signed_message(payload)
   end
 
   ##############################

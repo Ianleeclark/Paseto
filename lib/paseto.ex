@@ -10,7 +10,7 @@ defmodule Paseto do
   * footer: An optional value, often used for storing keyIDs or other similar info.
   """
 
-  alias Paseto.{Token, V1, V2}
+  alias Paseto.{Token, V1, V2, Utils}
 
   @doc """
   """
@@ -32,7 +32,8 @@ defmodule Paseto do
   end
 
   @doc """
-  Handles parsing a token. Providing it just the entire token will return the %Paseto.Token{} struct with all fields populated.
+  Handles parsing a token. Providing it just the entire token will return the
+  `Paseto.Token` struct with all fields populated.
 
   # Examples:
       iex> token = "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
@@ -47,42 +48,29 @@ defmodule Paseto do
   """
   @spec parse_token(String.t(), binary()) :: {:ok, %Token{}} | {:error, String.t()}
   def parse_token(token, key) do
-    case String.split(token, ".") do
-      [version, purpose, payload, footer] ->
-        with {:ok, decoded_footer} <- Base.url_decode64(footer, padding: false),
-             {:ok, verified_payload} <- _parse_token(version, purpose, payload, key, footer) do
-          {:ok,
-           %Token{
-             version: version,
-             purpose: purpose,
-             payload: verified_payload,
-             footer: decoded_footer
-           }}
+    with {:ok, %Token{version: version, purpose: purpose, payload: payload, footer: footer}} =
+           Utils.parse_token(token),
+         {:ok, verified_payload} <- _parse_token(version, purpose, payload, key, footer) do
+      decoded_footer =
+        if footer == <<>> do
+          nil
         else
-          {:error, _reason} = error -> error
+          Utils.b64_decode!(footer)
         end
 
-      [version, purpose, payload] ->
-        with {:ok, verified_payload} <- _parse_token(version, purpose, payload, key) do
-          {:ok,
-           %Token{
-             version: version,
-             purpose: purpose,
-             payload: verified_payload,
-             footer: nil
-           }}
-        else
-          {:error, _reason} = error -> error
-        end
-
-      {:error, reason} ->
-        {:error, "Invalid token encountered during token parsing: #{reason}"}
+      {:ok,
+       %Token{
+         version: version,
+         purpose: purpose,
+         payload: verified_payload,
+         footer: decoded_footer
+       }}
     end
   end
 
   @spec _parse_token(String.t(), String.t(), String.t(), String.t(), String.t() | tuple()) ::
           {:ok, String.t()} | {:error, String.t()}
-  defp _parse_token(version, purpose, payload, key, footer \\ "") do
+  defp _parse_token(version, purpose, payload, key, footer) do
     case String.downcase(version) do
       "v1" ->
         case purpose do
@@ -127,7 +115,7 @@ defmodule Paseto do
         payload: "This is a test message",
         purpose: "public",
         version: "v2"
-        }} 
+        }}
   """
   @spec generate_token(String.t(), String.t(), String.t(), String.t()) ::
           {:ok, String.t()} | {:error, String.t()}

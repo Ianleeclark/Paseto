@@ -77,4 +77,47 @@ defmodule Paseto.Utils do
   """
   @spec b64_decode(binary()) :: binary()
   def b64_decode!(input) when is_binary(input), do: Base.url_decode64!(input, padding: false)
+
+  @doc """
+  Parse a token into the `Paseto.Token` struct without decrypting/verifying the
+  payload.
+
+  ## Examples
+
+      iex> Paseto.Utils.parse_token("v2.local.payload")
+      {:ok, %Paseto.Token{version: "v2", purpose: "local", payload: "payload", footer: ""}}
+
+      iex> Paseto.Utils.parse_token("v1.public.payload.footer")
+      {:ok, %Paseto.Token{version: "v1", purpose: "public", payload: "payload", footer: "footer"}}
+
+      iex> Paseto.Utils.parse_token("v2.public")
+      {:error, "Invalid token format"}
+  """
+  @spec parse_token(String.t()) :: {:ok, %Paseto.Token{}} | {:error, String.t()}
+  def parse_token(token) when is_binary(token) do
+    case String.split(token, ".") do
+      [version, purpose, payload]
+      when version in ["v1", "v2"] and purpose in ["public", "local"] ->
+        {:ok,
+         %Paseto.Token{
+           version: version,
+           purpose: purpose,
+           payload: payload,
+           footer: ""
+         }}
+
+      [version, purpose, payload, footer]
+      when version in ["v1", "v2"] and purpose in ["public", "local"] ->
+        {:ok,
+         %Paseto.Token{
+           version: version,
+           purpose: purpose,
+           payload: payload,
+           footer: footer
+         }}
+
+      _ ->
+        {:error, "Invalid token format"}
+    end
+  end
 end

@@ -3,31 +3,33 @@ defmodule PasetoTest.V2 do
 
   alias Paseto.V2
   alias Paseto.Utils
+  alias Paseto.Token
   alias Salty.Sign.Ed25519
 
   describe "Encryption/Decryption tests" do
     test "Simple encrypt/decrypt, footerless" do
       message = "Test Message"
       key = :crypto.strong_rand_bytes(32)
-      result = V2.encrypt(message, key)
-      payload = String.replace(result, "v2.local.", "")
 
-      assert V2.decrypt(payload, key) == {:ok, message}
+      {:ok, %Token{payload: encrypted_payload}} =
+        message
+        |> V2.encrypt(key)
+        |> Utils.parse_token()
+
+      assert V2.decrypt(encrypted_payload, key) == {:ok, message}
     end
 
     test "Simple encrypt/decrypt, now with feet" do
       message = "Test Message"
       key = :crypto.strong_rand_bytes(32)
       footer = "key-id:04440"
-      encoded_footer = Base.url_encode64(footer, padding: false)
-      result = V2.encrypt(message, key, footer)
 
-      payload =
-        result
-        |> String.replace("v2.local.", "")
-        |> String.replace("." <> encoded_footer, "")
+      {:ok, %Token{payload: encrypted_payload, footer: encoded_footer}} =
+        message
+        |> V2.encrypt(key, footer)
+        |> Utils.parse_token()
 
-      assert V2.decrypt(payload, key, encoded_footer) == {:ok, message}
+      assert V2.decrypt(encrypted_payload, key, encoded_footer) == {:ok, message}
     end
 
     test "Decrypt a token created by the reference implementation" do
@@ -49,10 +51,16 @@ defmodule PasetoTest.V2 do
       token =
         "v2.local.qqqaTzKU0p71KHXG6xjn1CtVR8R1B9GCAjCYMCeGg85vqkXRNpbSX3dT6lQSBQ-g1n4mB_GZ1H0.djIgbG9jYWwgZm9vdGVy"
 
-      ["v2", "local", encrypted_payload, footer] = String.split(token, ".")
+      {:ok,
+       %Token{
+         payload: encrypted_payload,
+         footer: encoded_footer
+       }} = Utils.parse_token(token)
 
-      assert Utils.b64_decode!(footer) == "v2 local footer"
-      assert V2.decrypt(encrypted_payload, shared_key, footer) == {:ok, "v2 local example"}
+      assert Utils.b64_decode!(encoded_footer) == "v2 local footer"
+
+      assert V2.decrypt(encrypted_payload, shared_key, encoded_footer) ==
+               {:ok, "v2 local example"}
     end
   end
 
@@ -60,30 +68,39 @@ defmodule PasetoTest.V2 do
     test "Simple sign/verify, footerless" do
       message = "Test Message"
       {:ok, pk, sk} = Ed25519.keypair()
-      signed_token = V2.sign(message, sk)
-      payload = String.replace(signed_token, "v2.public.", "")
 
-      assert V2.verify(payload, pk) == {:ok, message}
+      {:ok, %Token{payload: signed_payload}} =
+        message
+        |> V2.sign(sk)
+        |> Utils.parse_token()
+
+      assert V2.verify(signed_payload, pk) == {:ok, message}
     end
 
     test "Simple sign/verify, with footer" do
       message = "Test Message"
       footer = "key-id:533434"
       {:ok, pk, sk} = Ed25519.keypair()
-      signed_token = V2.sign(message, sk, footer)
-      [_, _, payload, _] = String.split(signed_token, ".")
 
-      assert V2.verify(payload, pk, Base.url_encode64(footer)) == {:ok, message}
+      {:ok, %Token{payload: signed_payload, footer: encoded_footer}} =
+        message
+        |> V2.sign(sk, footer)
+        |> Utils.parse_token()
+
+      assert V2.verify(signed_payload, pk, encoded_footer) == {:ok, message}
     end
 
     test "Invalid PK fails to verify, footerless" do
       message = "Test Message"
       {:ok, _pk1, sk1} = Ed25519.keypair()
       {:ok, pk2, _sk2} = Ed25519.keypair()
-      signed_token = V2.sign(message, sk1)
-      payload = String.replace(signed_token, "v2.public.", "")
 
-      assert V2.verify(payload, pk2) == {:error, "Failed to verify signature."}
+      {:ok, %Token{payload: signed_payload}} =
+        message
+        |> V2.sign(sk1)
+        |> Utils.parse_token()
+
+      assert V2.verify(signed_payload, pk2) == {:error, "Failed to verify signature."}
     end
 
     test "Invalid PK fails to verify, with footer" do
@@ -91,10 +108,13 @@ defmodule PasetoTest.V2 do
       footer = "key-id:533434"
       {:ok, _pk1, sk1} = Ed25519.keypair()
       {:ok, pk2, _sk2} = Ed25519.keypair()
-      signed_token = V2.sign(message, sk1, footer)
-      [_, _, payload, _] = String.split(signed_token, ".")
 
-      assert V2.verify(payload, pk2, Base.url_encode64(footer)) ==
+      {:ok, %Token{payload: signed_payload, footer: encoded_footer}} =
+        message
+        |> V2.sign(sk1, footer)
+        |> Utils.parse_token()
+
+      assert V2.verify(signed_payload, pk2, encoded_footer) ==
                {:error, "Failed to verify signature."}
     end
 
@@ -119,10 +139,14 @@ defmodule PasetoTest.V2 do
       token =
         "v2.public.djIgcHVibGljIGV4YW1wbGUA-NAijhLJmBdhqgrJrhD2ktdU8lJlJQ_E020Oq6T97TFVsnn90ayCQ_enXozH9iyVng3oP61fINVnMGYo3FUG.djIgcHVibGljIGZvb3Rlcg"
 
-      ["v2", "public", signed_payload, footer] = String.split(token, ".")
+      {:ok,
+       %Token{
+         payload: signed_payload,
+         footer: encoded_footer
+       }} = Utils.parse_token(token)
 
-      assert Utils.b64_decode!(footer) == "v2 public footer"
-      assert V2.verify(signed_payload, public_key, footer) == {:ok, "v2 public example"}
+      assert Utils.b64_decode!(encoded_footer) == "v2 public footer"
+      assert V2.verify(signed_payload, public_key, encoded_footer) == {:ok, "v2 public example"}
     end
   end
 end
