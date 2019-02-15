@@ -1,4 +1,4 @@
-defmodule PasetoTest.V2 do
+defmodule Paseto.V2Test do
   use ExUnit.Case
 
   alias Paseto.V2

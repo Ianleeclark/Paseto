@@ -1,4 +1,4 @@
-defmodule PasetoTest.Utils do
+defmodule Paseto.UtilsTest do
   use ExUnit.Case
   use ExUnitProperties
 
