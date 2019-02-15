@@ -20,12 +20,14 @@ defmodule Paseto.V1 do
   @enforce_keys @all_keys
   defstruct @all_keys
 
-  @header 'v1'
+  @header_public "v1.public."
+  @header_local "v1.local."
+
   @hash_algo :sha384
 
   @nonce_size 32
   @mac_size 48
-  @signature_size 2048
+  @signature_size 256
 
   @doc """
   Takes a token and will decrypt/verify the signature and return the token in a more digestable manner
@@ -65,7 +67,7 @@ defmodule Paseto.V1 do
   @spec decrypt(String.t(), String.t(), String.t() | nil) ::
           {:ok, String.t()} | {:error, String.t()}
   def decrypt(data, key, footer \\ "") do
-    aead_decrypt(data, "#{@header}.local.", key, footer)
+    aead_decrypt(data, @header_local, key, footer)
   end
 
   @doc """
@@ -78,8 +80,7 @@ defmodule Paseto.V1 do
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t()
   def sign(data, secret_key, footer \\ "") do
-    h = "#{@header}.public."
-    m2 = Utils.pre_auth_encode([h, data, footer])
+    m2 = Utils.pre_auth_encode([@header_public, data, footer])
 
     signature =
       :crypto.sign(:rsa, @hash_algo, m2, secret_key, [
@@ -88,8 +89,8 @@ defmodule Paseto.V1 do
       ])
 
     case footer do
-      "" -> h <> b64_encode(data <> signature)
-      _ -> h <> b64_encode(data <> signature) <> "." <> b64_encode(footer)
+      "" -> @header_public <> b64_encode(data <> signature)
+      _ -> @header_public <> b64_encode(data <> signature) <> "." <> b64_encode(footer)
     end
   end
 
@@ -107,27 +108,29 @@ defmodule Paseto.V1 do
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
   def verify(signed_message, [_exp, mod] = public_key, footer \\ "")
       when byte_size(mod) == 256 do
-    header = "#{@header}.public."
-
     with {:ok, decoded} <- valid_b64?(:decode, signed_message),
          {:ok, decoded_footer} <- b64_decode(footer) do
-      message_size = round((byte_size(decoded) - @signature_size / 8) * 8)
-      <<message::size(message_size), signature::size(@signature_size)>> = decoded
+      message_size = byte_size(decoded) - @signature_size
 
-      m2 = Utils.pre_auth_encode([header, <<message::size(message_size)>>, decoded_footer])
+      <<
+        message::binary-size(message_size),
+        signature::binary-size(@signature_size)
+      >> = decoded
+
+      m2 = Utils.pre_auth_encode([@header_public, message, decoded_footer])
 
       case :crypto.verify(
              :rsa,
              @hash_algo,
              m2,
-             <<signature::size(@signature_size)>>,
+             signature,
              public_key,
              [
                {:rsa_padding, :rsa_pkcs1_pss_padding},
                {:rsa_mgf1_md, @hash_algo}
              ]
            ) do
-        true -> {:ok, <<message::size(message_size)>>}
+        true -> {:ok, message}
         false -> {:error, "Failed to verify signature."}
       end
     else
@@ -138,10 +141,14 @@ defmodule Paseto.V1 do
   @spec get_claims_from_signed_message(signed_message :: String.t()) :: String.t()
   defp get_claims_from_signed_message(signed_message) do
     with {:ok, decoded} <- valid_b64?(:decode, signed_message) do
-      message_size = round((byte_size(decoded) - @signature_size / 8) * 8)
-      <<message::size(message_size), _signature::size(@signature_size)>> = decoded
+      message_size = byte_size(decoded) - @signature_size
 
-      <<message::size(message_size)>>
+      <<
+        message::binary-size(message_size),
+        _signature::binary-size(@signature_size)
+      >> = decoded
+
+      message
     else
       {:error, _reason} = err -> err
     end
@@ -167,26 +174,25 @@ defmodule Paseto.V1 do
 
   @spec aead_encrypt(String.t(), String.t(), String.t() | nil) :: String.t()
   defp aead_encrypt(plaintext, key, footer) do
-    h = "#{@header}.local."
-
     nonce = get_nonce(plaintext, :crypto.strong_rand_bytes(@nonce_size))
-    <<leftmost::size(128), rightmost::size(128)>> = nonce
-    ek = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-encryption-key")
-    ak = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
+    <<leftmost::binary-16, rightmost::binary-16>> = nonce
+    ek = HKDF.derive(@hash_algo, key, 32, leftmost, "paseto-encryption-key")
+    ak = HKDF.derive(@hash_algo, key, 32, leftmost, "paseto-auth-key-for-aead")
 
-    ciphertext = PasetoCrypto.aes_256_ctr_encrypt(ek, plaintext, <<rightmost::128>>)
+    ciphertext = PasetoCrypto.aes_256_ctr_encrypt(ek, plaintext, rightmost)
 
     pre_auth_hash =
-      [h, nonce, ciphertext, footer]
+      [@header_local, nonce, ciphertext, footer]
       |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
     case footer do
       "" ->
-        h <> b64_encode(nonce <> ciphertext <> pre_auth_hash)
+        @header_local <> b64_encode(nonce <> ciphertext <> pre_auth_hash)
 
       _ ->
-        h <> b64_encode(nonce <> ciphertext <> pre_auth_hash) <> "." <> b64_encode(footer)
+        @header_local <>
+          b64_encode(nonce <> ciphertext <> pre_auth_hash) <> "." <> b64_encode(footer)
     end
   end
 
@@ -208,23 +214,24 @@ defmodule Paseto.V1 do
     ciphertext_len = length - @nonce_size - @mac_size
     footer = b64_decode!(footer)
 
-    <<nonce::binary-size(@nonce_size), ciphertext::binary-size(ciphertext_len), mac::384>> =
-      decoded
+    <<
+      nonce::binary-size(@nonce_size),
+      ciphertext::binary-size(ciphertext_len),
+      mac::binary-48
+    >> = decoded
 
-    <<leftmost::128, rightmost::128>> = nonce
+    <<leftmost::binary-16, rightmost::binary-16>> = nonce
 
-    ek = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-encryption-key")
-    ak = HKDF.derive(@hash_algo, key, 32, <<leftmost::128>>, "paseto-auth-key-for-aead")
+    ek = HKDF.derive(@hash_algo, key, 32, leftmost, "paseto-encryption-key")
+    ak = HKDF.derive(@hash_algo, key, 32, leftmost, "paseto-auth-key-for-aead")
 
     calc =
       [header, nonce, ciphertext, footer]
       |> Utils.pre_auth_encode()
       |> (&PasetoCrypto.hmac_sha384(ak, &1)).()
 
-    if calc == <<mac::384>> do
-      plaintext = PasetoCrypto.aes_256_ctr_decrypt(ek, ciphertext, <<rightmost::128>>)
-
-      {:ok, plaintext}
+    if calc == mac do
+      {:ok, PasetoCrypto.aes_256_ctr_decrypt(ek, ciphertext, rightmost)}
     else
       {:error, "Calculated hmac didn't match hmac from token."}
     end

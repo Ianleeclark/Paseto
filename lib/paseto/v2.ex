@@ -36,10 +36,11 @@ defmodule Paseto.V2 do
     }
   end
 
+  @header_public "v2.public."
+  @header_local "v2.local."
+
   @key_len 32
-  @nonce_len_bits 192
-  @nonce_len round(@nonce_len_bits / 8)
-  @header "v2"
+  @nonce_len 24
 
   @doc """
   Handles encrypting the payload and returning a valid token
@@ -78,14 +79,13 @@ defmodule Paseto.V2 do
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t()
   def sign(data, secret_key, footer \\ "") when byte_size(secret_key) == 64 do
-    h = "v2.public."
-    pre_auth_encode = Utils.pre_auth_encode([h, data, footer])
+    pre_auth_encode = Utils.pre_auth_encode([@header_public, data, footer])
 
     {:ok, sig} = Ed25519.sign_detached(pre_auth_encode, secret_key)
 
     case footer do
-      "" -> h <> b64_encode(data <> sig)
-      _ -> h <> b64_encode(data <> sig) <> "." <> b64_encode(footer)
+      "" -> @header_public <> b64_encode(data <> sig)
+      _ -> @header_public <> b64_encode(data <> sig) <> "." <> b64_encode(footer)
     end
   end
 
@@ -101,20 +101,16 @@ defmodule Paseto.V2 do
   """
   @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
   def verify(signed_message, public_key, footer \\ "") do
-    decoded_footer =
-      case footer do
-        "" -> ""
-        _ -> b64_decode!(footer)
-      end
-
-    h = "v2.public."
+    decoded_footer = b64_decode!(footer)
     decoded_message = b64_decode!(signed_message)
-    data_size = round(byte_size(decoded_message) * 8 - 512)
-    <<data::size(data_size), sig::size(512)>> = decoded_message
-    pre_auth_encode = Utils.pre_auth_encode([h, <<data::size(data_size)>>, decoded_footer])
 
-    case Ed25519.verify_detached(<<sig::size(512)>>, pre_auth_encode, public_key) do
-      :ok -> {:ok, <<data::size(data_size)>>}
+    data_size = byte_size(decoded_message) - 64
+    <<data::binary-size(data_size), sig::binary-64>> = decoded_message
+
+    pre_auth_encode = Utils.pre_auth_encode([@header_public, data, decoded_footer])
+
+    case Ed25519.verify_detached(sig, pre_auth_encode, public_key) do
+      :ok -> {:ok, data}
       {:error, _reason} -> {:error, "Failed to verify signature."}
     end
   end
@@ -140,10 +136,10 @@ defmodule Paseto.V2 do
   @spec get_claims_from_signed_message(signed_message :: String.t()) :: String.t()
   def get_claims_from_signed_message(signed_message) do
     decoded_message = b64_decode!(signed_message)
-    data_size = round(byte_size(decoded_message) * 8 - 512)
-    <<data::size(data_size), _sig::size(512)>> = decoded_message
+    data_size = byte_size(decoded_message) - 64
+    <<data::binary-size(data_size), _sig::binary-64>> = decoded_message
 
-    <<data::size(data_size)>>
+    data
   end
 
   @spec aead_encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
@@ -152,16 +148,15 @@ defmodule Paseto.V2 do
   end
 
   defp aead_encrypt(data, key, footer) when byte_size(key) == @key_len do
-    h = "#{@header}.local."
     n = :crypto.strong_rand_bytes(@nonce_len)
     nonce = Blake2.hash2b(data, @nonce_len, n)
-    pre_auth_encode = Utils.pre_auth_encode([h, nonce, footer])
+    pre_auth_encode = Utils.pre_auth_encode([@header_local, nonce, footer])
 
     {:ok, ciphertext} = Crypto.xchacha20_poly1305_encrypt(data, pre_auth_encode, nonce, key)
 
     case footer do
-      "" -> h <> b64_encode(nonce <> ciphertext)
-      _ -> h <> b64_encode(nonce <> ciphertext) <> "." <> b64_encode(footer)
+      "" -> @header_local <> b64_encode(nonce <> ciphertext)
+      _ -> @header_local <> b64_encode(nonce <> ciphertext) <> "." <> b64_encode(footer)
     end
   end
 
@@ -171,24 +166,14 @@ defmodule Paseto.V2 do
   end
 
   defp aead_decrypt(data, key, footer) when byte_size(key) == @key_len do
-    h = "#{@header}.local."
     decoded_payload = b64_decode!(data)
+    decoded_footer = b64_decode!(footer)
 
-    decoded_footer =
-      case footer do
-        "" -> ""
-        _ -> b64_decode!(footer)
-      end
+    <<nonce::binary-size(@nonce_len), ciphertext::binary>> = decoded_payload
 
-    <<nonce::size(@nonce_len_bits), ciphertext::binary>> = decoded_payload
-    pre_auth_encode = Utils.pre_auth_encode([h, <<nonce::size(@nonce_len_bits)>>, decoded_footer])
+    pre_auth_encode = Utils.pre_auth_encode([@header_local, nonce, decoded_footer])
 
-    case Crypto.xchacha20_poly1305_decrypt(
-           ciphertext,
-           pre_auth_encode,
-           <<nonce::size(@nonce_len_bits)>>,
-           key
-         ) do
+    case Crypto.xchacha20_poly1305_decrypt(ciphertext, pre_auth_encode, nonce, key) do
       {:ok, plaintext} -> {:ok, plaintext}
       {:error, reason} -> {:error, "Failed to decrypt payload due to: #{reason}"}
     end
