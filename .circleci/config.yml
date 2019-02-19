@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: smaximov/elixir-libsodium:1.8.1-alpine
+      - image: grappigpanda/elixir-libsodium:1.8.1-alpine
         environment:
           MIX_ENV: test
 
