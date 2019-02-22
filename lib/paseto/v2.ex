@@ -50,9 +50,10 @@ defmodule Paseto.V2 do
       iex> Paseto.V2.encrypt("This is a test message", key)
       "v2.local.voHwaLKK64eSfnCGoJuxJvoyncIpDrg2AkFbRTBeOOBdytn8XoRtl_sRORjlGdTvPageE38TR7dVlv5wxw0"
   """
-  @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
-  def encrypt(data, key, footer \\ "") do
-    aead_encrypt(data, key, footer)
+  @spec encrypt(String.t(), String.t(), String.t(), binary | nil) ::
+          String.t() | {:error, String.t()}
+  def encrypt(data, key, footer \\ "", n \\ nil) do
+    aead_encrypt(data, key, footer, n || :crypto.strong_rand_bytes(@nonce_len))
   end
 
   @doc """
@@ -135,13 +136,13 @@ defmodule Paseto.V2 do
     data
   end
 
-  @spec aead_encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
-  defp aead_encrypt(_data, key, _footer) when byte_size(key) != @key_len do
+  @spec aead_encrypt(String.t(), String.t(), String.t(), binary) ::
+          String.t() | {:error, String.t()}
+  defp aead_encrypt(_data, key, _footer, _n) when byte_size(key) != @key_len do
     {:error, "Invalid key length. Expected #{@key_len}, but got #{byte_size(key)}"}
   end
 
-  defp aead_encrypt(data, key, footer) when byte_size(key) == @key_len do
-    n = :crypto.strong_rand_bytes(@nonce_len)
+  defp aead_encrypt(data, key, footer, n) when byte_size(key) == @key_len do
     nonce = Blake2.hash2b(data, @nonce_len, n)
     pre_auth_encode = Utils.pre_auth_encode([@header_local, nonce, footer])
 
