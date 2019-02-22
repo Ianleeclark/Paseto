@@ -4,8 +4,8 @@ defmodule Paseto.MixProject do
   def project do
     [
       app: :paseto,
-      version: "1.1.1",
-      elixir: "~> 1.5",
+      version: "1.2.0",
+      elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -24,11 +24,10 @@ defmodule Paseto.MixProject do
     [
       {:credo, "~> 0.9.0-rc1", only: [:dev, :test], runtime: false},
       {:hkdf, "~> 0.1.0"},
-      {:hexate, ">= 0.6.0"},
       {:blake2, "~> 1.0"},
       {:salty, "~> 0.1.3", hex: :libsalty},
       {:stream_data, "~> 0.1", only: :test},
-      {:ex_doc, "~> 0.16", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
 

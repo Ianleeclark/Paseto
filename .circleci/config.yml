@@ -1,23 +1,38 @@
-# Elixir CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-elixir/ for more details
 version: 2
 jobs:
   build:
     docker:
-      # specify the version here
-      - image: circleci/elixir:1.5
+      - image: grappigpanda/elixir-libsodium:1.8.1-alpine
+        environment:
+          MIX_ENV: test
 
     steps:
       - checkout
 
-      - run: wget https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.13.tar.gz
-      - run: tar xf libsodium-1.0.13.tar.gz
-      - run: cd libsodium-1.0.13; ./configure; make; sudo make install
-
-      - run: mix local.hex --force  # install Hex locally (without prompt)
-      - run: mix local.rebar --force  # fetch a copy of rebar (without prompt)
-
-      - run: mix deps.get
+      - restore_cache:
+          keys:
+            - v1-mix-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
+            - v1-mix-cache-{{ .Branch }}
+            - v1-mix-cache
+      - restore_cache:
+          keys:
+            - v1-build-cache-{{ .Branch }}
+            - v1-build-cache
+      - run: mix do deps.get --only test, compile
+      - save_cache:
+          key: v1-mix-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
+          paths: "deps"
+      - save_cache:
+          key: v1-mix-cache-{{ .Branch }}
+          paths: "deps"
+      - save_cache:
+          key: v1-mix-cache
+          paths: "deps"
+      - save_cache:
+          key: v1-build-cache-{{ .Branch }}
+          paths: "_build"
+      - save_cache:
+          key: v1-build-cache
+          paths: "_build"
       - run: mix test
       - run: mix credo
