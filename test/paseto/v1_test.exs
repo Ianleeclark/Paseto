@@ -115,16 +115,9 @@ defmodule Paseto.V1Test do
                {:error, "Failed to verify signature."}
     end
 
-    @rsa_pk_pem "./v1_pk.pem"
-                |> Path.expand(__DIR__)
+    @rsa_pk_pem "test/fixtures/v1_pk.pem"
                 |> File.read!()
                 |> String.trim()
-
-    import Record
-
-    defrecord :rsa_pk,
-              :RSAPublicKey,
-              Record.extract(:RSAPublicKey, from_lib: "public_key/include/public_key.hrl")
 
     test "Verify a token created by the reference implementation" do
       # use ParagonIE\Paseto\Keys\AsymmetricSecretKey;
@@ -134,10 +127,7 @@ defmodule Paseto.V1Test do
       # $secretKey = AsymmetricSecretKey::generate(new Version1());
       # $publicKey = $secretKey->getPublicKey();
       # # dump $publicKey->raw() to "v1_pk.pem"
-      [rsa_pk_entry] = :public_key.pem_decode(@rsa_pk_pem)
-      rsa_pk_rec = :public_key.pem_entry_decode(rsa_pk_entry)
-      rsa_pk_mod = rsa_pk(rsa_pk_rec, :modulus)
-      public_key = [<<1, 0, 1>>, <<rsa_pk_mod::size(256)-unit(8)>>]
+      public_key = Paseto.RSAPublicKey.decode(@rsa_pk_pem)
 
       # $plaintext = "v1 public example"
       # $footer = "v1 public footer"
