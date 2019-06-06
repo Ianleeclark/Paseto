@@ -49,9 +49,10 @@ defmodule Paseto.V1 do
       iex> Paseto.V1.encrypt("This is a test message", "Test Key")
       "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
   """
-  @spec encrypt(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
-  def encrypt(data, key, footer \\ "") do
-    aead_encrypt(data, key, footer)
+  @spec encrypt(String.t(), String.t(), String.t(), binary | nil) ::
+          String.t() | {:error, String.t()}
+  def encrypt(data, key, footer \\ "", n \\ nil) do
+    aead_encrypt(data, key, footer, n || :crypto.strong_rand_bytes(@nonce_size))
   end
 
   @doc """
@@ -165,9 +166,9 @@ defmodule Paseto.V1 do
   # Internal Private Functions #
   ##############################
 
-  @spec aead_encrypt(String.t(), String.t(), String.t() | nil) :: String.t()
-  defp aead_encrypt(plaintext, key, footer) do
-    nonce = get_nonce(plaintext, :crypto.strong_rand_bytes(@nonce_size))
+  @spec aead_encrypt(String.t(), String.t(), String.t() | nil, binary) :: String.t()
+  defp aead_encrypt(plaintext, key, footer, n) do
+    nonce = get_nonce(plaintext, n)
     <<leftmost::binary-16, rightmost::binary-16>> = nonce
     ek = HKDF.derive(@hash_algo, key, 32, leftmost, "paseto-encryption-key")
     ak = HKDF.derive(@hash_algo, key, 32, leftmost, "paseto-auth-key-for-aead")
