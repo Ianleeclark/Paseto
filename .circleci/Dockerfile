@@ -1,8 +1,8 @@
-FROM elixir:1.8.1-alpine
+FROM elixir:1.9-alpine
 
 RUN apk add --no-cache \
         gcc \
-        libsodium-dev=1.0.16-r0 \
+        libsodium-dev=1.0.18-r0 \
         make \
         musl-dev
 

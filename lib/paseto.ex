@@ -133,8 +133,6 @@ defmodule Paseto do
     end
   end
 
-  @spec _generate_token(String.t(), String.t(), binary, String.t(), String.t()) ::
-          {:ok, String.t()} | {:error, String.t()}
   defp _generate_token(version, "local", payload, key, footer) do
     case String.downcase(version) do
       "v2" -> V2.encrypt(payload, key, footer)

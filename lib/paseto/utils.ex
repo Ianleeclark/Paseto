@@ -75,7 +75,7 @@ defmodule Paseto.Utils do
       iex> Paseto.Utils.b64_decode!("bad input")
       ** (ArgumentError) non-alphabet digit found: \" \" (byte 32)
   """
-  @spec b64_decode(binary()) :: binary()
+  @spec b64_decode!(binary()) :: binary()
   def b64_decode!(input) when is_binary(input), do: Base.url_decode64!(input, padding: false)
 
   @doc """

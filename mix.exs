@@ -5,13 +5,14 @@ defmodule Paseto.MixProject do
     [
       app: :paseto,
       version: "1.3.1",
-      elixir: "~> 1.8",
+      elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
       description: description(),
-      package: package()
+      package: package(),
+      dialyzer: [ignore_warnings: ".dialyzer_ignore.exs"]
     ]
   end
 

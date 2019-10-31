@@ -32,7 +32,7 @@ defmodule Paseto.V1 do
   @doc """
   Takes a token and will decrypt/verify the signature and return the token in a more digestable manner
   """
-  @spec from_token(%Token{}) :: %__MODULE__{}
+  @spec from_token(Token.t()) :: %__MODULE__{}
   def from_token(token) do
     %__MODULE__{
       version: token.version,
@@ -103,7 +103,11 @@ defmodule Paseto.V1 do
       iex> V1.verify(version <> "." <> purpose <> ".", payload, public_key)
       "{:ok, "This is a test message!"}"
   """
-  @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
+  @spec verify(
+          String.t(),
+          [binary()],
+          String.t() | nil
+        ) :: {:ok, binary} | {:error, binary()}
   def verify(signed_message, [_exp, mod] = public_key, footer \\ "")
       when byte_size(mod) == 256 do
     with {:ok, decoded} <- valid_b64?(:decode, signed_message),
@@ -132,7 +136,8 @@ defmodule Paseto.V1 do
         false -> {:error, "Failed to verify signature."}
       end
     else
-      {:error, _reason} = err -> err
+      :error -> {:error, "Failed to decode token during verification."}
+      err -> {:error, "Token verification failed due to #{inspect(err)}"}
     end
   end
 
@@ -185,7 +190,8 @@ defmodule Paseto.V1 do
     Utils.b64_encode_token(@header_local, nonce <> ciphertext <> pre_auth_hash, footer)
   end
 
-  @spec aead_decrypt(String.t(), String.t(), String.t(), String.t() | nil) :: String.t()
+  @spec aead_decrypt(String.t(), String.t(), String.t(), String.t() | nil) ::
+          {:ok, String.t()} | {:error, String.t()}
   defp aead_decrypt(message, header, key, footer) do
     expected_len = String.length(header)
     given_header = String.slice(message, 0..(expected_len - 1))
@@ -195,8 +201,8 @@ defmodule Paseto.V1 do
         {:ok, decoded_value} ->
           decoded_value
 
-        {:error, reason} ->
-          {:error, "Failed to decode header #{given_header} during decryption due to #{reason}"}
+        :error ->
+          {:error, "Failed to decode header #{given_header} during decryption"}
       end
 
     length = byte_size(decoded)
