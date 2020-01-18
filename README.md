@@ -1,7 +1,6 @@
 # Paseto
-[![CircleCI](https://circleci.com/gh/GrappigPanda/Paseto/tree/master.svg?style=svg)](https://circleci.com/gh/GrappigPanda/Paseto/tree/master)
+[![CircleCI](https://circleci.com/gh/Ianleeclark/Paseto/tree/master.svg?style=svg)](https://circleci.com/gh/Ianleeclark/Paseto/tree/master)
 [![Hex.pm](https://img.shields.io/hexpm/v/paseto.svg)](https://hex.pm/packages/paseto)
-[HexDocs][]
 
 This repository houses an elixir implementation of [Paseto](https://github.com/paragonie/paseto)
 
