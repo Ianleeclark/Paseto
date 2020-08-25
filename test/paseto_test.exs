@@ -1,6 +1,6 @@
 defmodule PasetoTest do
   use ExUnit.Case
-  use ExUnitProperties
+  ExUnitProperties
 
   alias Salty.Sign.Ed25519
 
