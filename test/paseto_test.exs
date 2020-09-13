@@ -1,19 +1,19 @@
 defmodule PasetoTest do
   use ExUnit.Case
-  ExUnitProperties
+  use ExUnitProperties
 
   alias Salty.Sign.Ed25519
 
   @public_exponent 65_537
 
   defp version_generator() do
-    ExUnitProperties.gen all version <- StreamData.member_of(["v1", "v2"]) do
+    ExUnitProperties.gen all(version <- StreamData.member_of(["v1", "v2"])) do
       version
     end
   end
 
   defp purpose_generator() do
-    ExUnitProperties.gen all purpose <- StreamData.member_of(["local", "public"]) do
+    ExUnitProperties.gen all(purpose <- StreamData.member_of(["local", "public"])) do
       purpose
     end
   end
@@ -39,13 +39,15 @@ defmodule PasetoTest do
   end
 
   property "Property tests for generator/parse_tokens" do
-    check all version <- version_generator(),
-              purpose <- purpose_generator(),
-              footer <- StreamData.string(:ascii, min_length: 1),
-              plaintext <- StreamData.string(:ascii, min_length: 1),
-              key = key_generator(version, purpose),
-              generated_token = Paseto.generate_token(version, purpose, plaintext, key, footer),
-              max_runs: 500 do
+    check all(
+            version <- version_generator(),
+            purpose <- purpose_generator(),
+            footer <- StreamData.string(:ascii, min_length: 1),
+            plaintext <- StreamData.string(:ascii, min_length: 1),
+            key = key_generator(version, purpose),
+            generated_token = Paseto.generate_token(version, purpose, plaintext, key, footer),
+            max_runs: 500
+          ) do
       header = version <> "." <> purpose <> "."
       assert String.starts_with?(generated_token, header)
       assert String.ends_with?(generated_token, "." <> Base.url_encode64(footer, padding: false))
