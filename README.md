@@ -118,7 +118,7 @@ iex> token = Paseto.generate_token("v2", "public", "This is a test message", key
 "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
 ```
 
-In short, we generate a keypair using libsalty (libsodium elixir bindings) and generate the token using that keypair.
+In short, we generate a keypair using [libsalty2](https://github.com/Ianleeclark/libsalty2) (libsodium elixir bindings) and generate the token using that keypair.
 
 P.S. If you're confused about how to serialize the above keys, you can use functions
 from the [`Base`](https://hexdocs.pm/elixir/Base.html) module:
@@ -172,7 +172,7 @@ by adding `paseto` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:paseto, "~> 1.3.0"}
+    {:paseto, "~> 1.3.1"}
   ]
 end
 ```
