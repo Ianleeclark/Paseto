@@ -52,7 +52,7 @@ defmodule Paseto.MixProject do
       files: ["lib", "mix.exs", "README.*", "LICENSE"],
       maintainers: ["Ian Lee Clark"],
       licenses: ["BSD"],
-      links: %{"Github" => "https://github.com/GrappigPanda/Paseto"}
+      links: %{"Github" => "https://github.com/ianleeclark/Paseto"}
     ]
   end
 end

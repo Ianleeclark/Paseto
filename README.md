@@ -39,8 +39,8 @@ library to work on any computer:
 ## Want to use this library through Guardian or Plugs?
 
 Check out some of my other libraries:
-* https://github.com/GrappigPanda/paseto_plug
-* https://github.com/GrappigPanda/guardian_paseto
+* https://github.com/ianleeclark/paseto_plug
+* https://github.com/ianleeclark/guardian_paseto
 
 ### Paseto
 
