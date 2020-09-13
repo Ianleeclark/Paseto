@@ -138,17 +138,19 @@ defmodule Paseto.V1 do
 
   @spec get_claims_from_signed_message(signed_message :: String.t()) :: String.t()
   defp get_claims_from_signed_message(signed_message) do
-    with {:ok, decoded} <- valid_b64?(:decode, signed_message) do
-      message_size = byte_size(decoded) - @signature_size
+    case valid_b64?(:decode, signed_message) do
+      {:ok, decoded} ->
+        message_size = byte_size(decoded) - @signature_size
 
-      <<
-        message::binary-size(message_size),
-        _signature::binary-size(@signature_size)
-      >> = decoded
+        <<
+          message::binary-size(message_size),
+          _signature::binary-size(@signature_size)
+        >> = decoded
 
-      message
-    else
-      {:error, _reason} = err -> err
+        message
+
+      {:error, _reason} = err ->
+        err
     end
   end
 
