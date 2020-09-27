@@ -14,7 +14,8 @@ defmodule Paseto.MixProject do
       package: package(),
       dialyzer: [
         ignore_warnings: ".dialyzer_ignore.exs",
-        plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        plt_add_apps: [:public_key]
       ],
       preferred_cli_env: [testall: :test]
     ]
