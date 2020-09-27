@@ -20,8 +20,7 @@ jobs:
             - v1-build-cache
       - restore_cache:
           keys:
-            - v1-plt-cache-{{ checksum ".tool-versions" }}
-
+            - v2-plt-cache-{{ checksum ".tool-versions" }}
 
       - run: mix do deps.get --only test, compile
       - run: mix test
@@ -44,6 +43,6 @@ jobs:
           key: v1-build-cache
           paths: "_build"
       - save_cache:
-          key: v1-plt-cache-{{ checksum ".tool-versions" }}
+          key: v2-plt-cache-{{ checksum ".tool-versions" }}
           paths:
-            - /app/priv/plts
+            - priv/plts

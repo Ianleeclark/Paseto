@@ -12,7 +12,10 @@ defmodule Paseto.MixProject do
       deps: deps(),
       description: description(),
       package: package(),
-      dialyzer: [ignore_warnings: ".dialyzer_ignore.exs"]
+      dialyzer: [
+        ignore_warnings: ".dialyzer_ignore.exs",
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
+      ]
     ]
   end
 
