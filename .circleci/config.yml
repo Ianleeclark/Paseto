@@ -45,4 +45,4 @@ jobs:
       - save_cache:
           key: v2-plt-cache-{{ checksum ".tool-versions" }}
           paths:
-            - priv/plts
+            - /priv/plts
