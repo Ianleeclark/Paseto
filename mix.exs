@@ -15,8 +15,11 @@ defmodule Paseto.MixProject do
       dialyzer: [
         ignore_warnings: ".dialyzer_ignore.exs",
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        # We're adding `public_key` here as the erlang env this
+        # is running in doesn't, by default, have it included.
         plt_add_apps: [:public_key]
       ],
+      # Make sure that `testall` always runs under `MIX_ENV=test`
       preferred_cli_env: [testall: :test]
     ]
   end
