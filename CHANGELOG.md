@@ -6,4 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Adding dialyzer + fixed typespecs - [#33](https://github.com/Ianleeclark/Paseto/pull/33)
+- Dialyzer + fixed typespecs - [#33](https://github.com/Ianleeclark/Paseto/pull/33)
+- CI Infrastructure
+- Assorted dep updates
+
+## v0.13.1
+### Fixed
+- Added support for OTP-23.0
