@@ -15,7 +15,8 @@ defmodule Paseto.MixProject do
       dialyzer: [
         ignore_warnings: ".dialyzer_ignore.exs",
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
-      ]
+      ],
+      preferred_cli_env: [testall: :test]
     ]
   end
 
@@ -27,7 +28,7 @@ defmodule Paseto.MixProject do
 
   defp deps do
     [
-      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:hkdf, "~> 0.1.0"},
       {:blake2, "~> 1.0"},
       {:libsalty2, "~> 0.2.1"},
