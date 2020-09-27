@@ -131,6 +131,8 @@ defmodule Paseto.Utils do
      iex> Paseto.Utils.b64_encode_token("v1.public.", "message", "footer")
      "v1.public.bWVzc2FnZQ.Zm9vdGVy"
   """
+  @spec b64_encode_token(head :: String.t(), message :: String.t(), footer :: String.t()) ::
+          String.t()
   def b64_encode_token(header, message, footer \\ "") do
     footer =
       if footer == "" do

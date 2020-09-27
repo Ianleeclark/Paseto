@@ -79,17 +79,19 @@ defmodule Paseto.V1 do
       iex> Paseto.V1.sign("This is a test message!", secret_key)
       "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
   """
-  @spec sign(String.t(), String.t(), String.t()) :: String.t()
-  def sign(data, secret_key, footer \\ "") do
+  @spec sign(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
+  def sign(data, public_key, footer \\ "") do
     m2 = Utils.pre_auth_encode([@header_public, data, footer])
 
     signature =
-      :crypto.sign(:rsa, @hash_algo, m2, secret_key, [
+      :crypto.sign(:rsa, @hash_algo, m2, public_key, [
         {:rsa_padding, :rsa_pkcs1_pss_padding},
         {:rsa_mgf1_md, @hash_algo}
       ])
 
     Utils.b64_encode_token(@header_public, data <> signature, footer)
+  rescue
+    _ -> {:error, "Signing failure."}
   end
 
   @doc """
