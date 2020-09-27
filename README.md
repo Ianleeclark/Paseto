@@ -40,7 +40,7 @@ library to work on any computer:
 
 Check out some of my other libraries:
 * https://github.com/ianleeclark/paseto_plug
-* https://github.com/ianleeclark/guardian_paseto
+* https://github.com/ueberauth/guardian_paseto
 
 ### Paseto
 
@@ -166,8 +166,8 @@ $ yum install libsodium-devel
 $ brew install libsodium
 ```
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `paseto` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `paseto` to your list of 
+dependencies in `mix.exs`:
 
 ```elixir
 def deps do
