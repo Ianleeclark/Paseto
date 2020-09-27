@@ -7,24 +7,17 @@ defmodule Paseto.Utils.Crypto do
   AES-256 in counter mode for encrypting. Used for v1 local.
   """
   @spec aes_256_ctr_encrypt(binary, binary, binary) :: binary
-  def aes_256_ctr_encrypt(key, data, nonce) do
-    {_, ciphertext} =
-      :crypto.stream_init(:aes_ctr, key, nonce)
-      |> :crypto.stream_encrypt(data)
-
-    ciphertext
-  end
+  def aes_256_ctr_encrypt(key, data, nonce), do: aes_256_ctr(key, data, nonce)
 
   @doc """
   AES-256 in counter mode for decrypting. Used for v1 local.
   """
   @spec aes_256_ctr_decrypt(binary, String.t(), binary) :: binary
-  def aes_256_ctr_decrypt(key, data, nonce) do
-    {_, plaintext} =
-      :crypto.stream_init(:aes_ctr, key, nonce)
-      |> :crypto.stream_decrypt(data)
+  def aes_256_ctr_decrypt(key, data, nonce), do: aes_256_ctr(key, data, nonce)
 
-    plaintext
+  @spec aes_256_ctr(binary, String.t(), binary) :: binary
+  defp aes_256_ctr(key, data, nonce) do
+    :crypto.crypto_one_time(:aes_256_ctr, key, nonce, data, true)
   end
 
   @doc """
