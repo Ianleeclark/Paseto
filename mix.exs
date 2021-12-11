@@ -4,14 +4,23 @@ defmodule Paseto.MixProject do
   def project do
     [
       app: :paseto,
-      version: "1.3.0",
-      elixir: "~> 1.8",
+      version: "1.3.1",
+      elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
       description: description(),
-      package: package()
+      package: package(),
+      dialyzer: [
+        ignore_warnings: ".dialyzer_ignore.exs",
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        # We're adding `public_key` here as the erlang env this
+        # is running in doesn't, by default, have it included.
+        plt_add_apps: [:public_key]
+      ],
+      # Make sure that `testall` always runs under `MIX_ENV=test`
+      preferred_cli_env: [testall: :test]
     ]
   end
 
@@ -23,12 +32,13 @@ defmodule Paseto.MixProject do
 
   defp deps do
     [
-      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:hkdf, "~> 0.1.0"},
       {:blake2, "~> 1.0"},
-      {:salty, "~> 0.1.3", hex: :libsalty},
-      {:stream_data, "~> 0.1", only: :test},
-      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
+      {:libsalty2, "~> 0.2.1"},
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.1.0", only: [:dev, :test], runtime: false},
+      {:stream_data, "~> 0.5.0", only: :test}
     ]
   end
 
@@ -51,7 +61,7 @@ defmodule Paseto.MixProject do
       files: ["lib", "mix.exs", "README.*", "LICENSE"],
       maintainers: ["Ian Lee Clark"],
       licenses: ["BSD"],
-      links: %{"Github" => "https://github.com/GrappigPanda/Paseto"}
+      links: %{"Github" => "https://github.com/ianleeclark/Paseto"}
     ]
   end
 end

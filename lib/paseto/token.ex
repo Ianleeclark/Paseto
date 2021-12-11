@@ -5,7 +5,7 @@ defmodule Paseto.Token do
 
   @typedoc """
   """
-  @type token :: %{
+  @type t :: %{
           version: String.t(),
           purpose: String.t(),
           payload: String.t(),

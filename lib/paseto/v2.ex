@@ -26,7 +26,7 @@ defmodule Paseto.V2 do
   @enforce_keys @all_keys
   defstruct @all_keys
 
-  @spec from_token(%Token{}) :: %__MODULE__{}
+  @spec from_token(Token.t()) :: %__MODULE__{}
   def from_token(token) do
     %__MODULE__{
       version: token.version,
@@ -78,13 +78,15 @@ defmodule Paseto.V2 do
       iex> Paseto.V2.sign("Test Message", sk)
       "v2.public.VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE"
   """
-  @spec sign(String.t(), String.t(), String.t()) :: String.t()
+  @spec sign(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
   def sign(data, secret_key, footer \\ "") when byte_size(secret_key) == 64 do
     pre_auth_encode = Utils.pre_auth_encode([@header_public, data, footer])
 
     {:ok, sig} = Ed25519.sign_detached(pre_auth_encode, secret_key)
 
     Utils.b64_encode_token(@header_public, data <> sig, footer)
+  rescue
+    _ -> {:error, "Signing failure."}
   end
 
   @doc """
@@ -97,7 +99,7 @@ defmodule Paseto.V2 do
       iex> Paseto.V2.verify("VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE", pk)
       "{:ok, "Test"}"
   """
-  @spec verify(String.t(), String.t(), String.t() | nil) :: {:ok, binary} | {:error, String.t()}
+  @spec verify(String.t(), [binary()], String.t() | nil) :: {:ok, binary} | {:error, String.t()}
   def verify(signed_message, public_key, footer \\ "") do
     decoded_footer = b64_decode!(footer)
     decoded_message = b64_decode!(signed_message)
@@ -107,10 +109,10 @@ defmodule Paseto.V2 do
 
     pre_auth_encode = Utils.pre_auth_encode([@header_public, data, decoded_footer])
 
-    case Ed25519.verify_detached(sig, pre_auth_encode, public_key) do
-      :ok -> {:ok, data}
-      {:error, _reason} -> {:error, "Failed to verify signature."}
-    end
+    :ok = Ed25519.verify_detached(sig, pre_auth_encode, public_key)
+    {:ok, data}
+  rescue
+    _ -> {:error, "Failed to verify signature."}
   end
 
   @doc """
@@ -128,7 +130,7 @@ defmodule Paseto.V2 do
   ##############################
 
   @spec get_claims_from_signed_message(signed_message :: String.t()) :: String.t()
-  def get_claims_from_signed_message(signed_message) do
+  defp get_claims_from_signed_message(signed_message) do
     decoded_message = b64_decode!(signed_message)
     data_size = byte_size(decoded_message) - 64
     <<data::binary-size(data_size), _sig::binary-64>> = decoded_message
@@ -147,8 +149,9 @@ defmodule Paseto.V2 do
     pre_auth_encode = Utils.pre_auth_encode([@header_local, nonce, footer])
 
     {:ok, ciphertext} = Crypto.xchacha20_poly1305_encrypt(data, pre_auth_encode, nonce, key)
-
     Utils.b64_encode_token(@header_local, nonce <> ciphertext, footer)
+  rescue
+    _ -> {:error, "AEAD Encryption failed."}
   end
 
   @spec aead_decrypt(String.t(), binary, String.t()) :: {:ok, String.t()} | {:error, String.t()}
@@ -164,9 +167,6 @@ defmodule Paseto.V2 do
 
     pre_auth_encode = Utils.pre_auth_encode([@header_local, nonce, decoded_footer])
 
-    case Crypto.xchacha20_poly1305_decrypt(ciphertext, pre_auth_encode, nonce, key) do
-      {:ok, plaintext} -> {:ok, plaintext}
-      {:error, reason} -> {:error, "Failed to decrypt payload due to: #{reason}"}
-    end
+    Crypto.xchacha20_poly1305_decrypt(ciphertext, pre_auth_encode, nonce, key)
   end
 end

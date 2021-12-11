@@ -1,7 +1,6 @@
 # Paseto
-[![CircleCI](https://circleci.com/gh/GrappigPanda/Paseto/tree/master.svg?style=svg)](https://circleci.com/gh/GrappigPanda/Paseto/tree/master)
+[![CircleCI](https://circleci.com/gh/Ianleeclark/Paseto/tree/master.svg?style=svg)](https://circleci.com/gh/Ianleeclark/Paseto/tree/master)
 [![Hex.pm](https://img.shields.io/hexpm/v/paseto.svg)](https://hex.pm/packages/paseto)
-[HexDocs][]
 
 This repository houses an elixir implementation of [Paseto](https://github.com/paragonie/paseto)
 
@@ -40,8 +39,8 @@ library to work on any computer:
 ## Want to use this library through Guardian or Plugs?
 
 Check out some of my other libraries:
-* https://github.com/GrappigPanda/paseto_plug
-* https://github.com/GrappigPanda/guardian_paseto
+* https://github.com/ianleeclark/paseto_plug
+* https://github.com/ueberauth/guardian_paseto
 
 ### Paseto
 
@@ -119,7 +118,7 @@ iex> token = Paseto.generate_token("v2", "public", "This is a test message", key
 "v2.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSe-sJyD2x_fCDGEUKDcvjU9y3jRHxD4iEJ8iQwwfMUq5jUR47J15uPbgyOmBkQCxNDydR0yV1iBR-GPpyE-NQw"
 ```
 
-In short, we generate a keypair using libsalty (libsodium elixir bindings) and generate the token using that keypair.
+In short, we generate a keypair using [libsalty2](https://github.com/Ianleeclark/libsalty2) (libsodium elixir bindings) and generate the token using that keypair.
 
 P.S. If you're confused about how to serialize the above keys, you can use functions
 from the [`Base`](https://hexdocs.pm/elixir/Base.html) module:
@@ -167,13 +166,13 @@ $ yum install libsodium-devel
 $ brew install libsodium
 ```
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `paseto` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `paseto` to your list of 
+dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:paseto, "~> 1.2.0"}
+    {:paseto, "~> 1.3.1"}
   ]
 end
 ```
