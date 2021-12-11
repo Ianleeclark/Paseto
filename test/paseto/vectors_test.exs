@@ -6,7 +6,7 @@ defmodule Paseto.VectorsTest do
   describe "v1.local (shared-key encryption) test vectors" do
     vectors = TestVectors.load("test/fixtures/test_vectors/v1_local.exs")
 
-    for {vector, quoted_example} <- Enum.map(vectors, &TestVectors.to_local_example/1) do
+    for {vector, quoted_example} <- Enum.map(vectors, &TestVectors.to_v1_local_example/1) do
       test vector do
         %{key: key, nonce: nonce, payload: payload, footer: footer, token: token} =
           unquote(quoted_example)
@@ -39,7 +39,7 @@ defmodule Paseto.VectorsTest do
   describe "v2.local (shared-key encryption) test vectors" do
     vectors = TestVectors.load("test/fixtures/test_vectors/v2_local.exs")
 
-    for {vector, quoted_example} <- Enum.map(vectors, &TestVectors.to_local_example/1) do
+    for {vector, quoted_example} <- Enum.map(vectors, &TestVectors.to_v2_local_example/1) do
       test vector do
         %{key: key, nonce: nonce, payload: payload, footer: footer, token: token} =
           unquote(quoted_example)
@@ -59,14 +59,14 @@ defmodule Paseto.VectorsTest do
 
     for {vector, quoted_example} <- Enum.map(vectors, &TestVectors.to_v2_public_example/1) do
       test vector do
-        %{sk: sk, pk: pk, payload: payload, footer: footer, token: token} =
+        %{keypair: keypair, payload: payload, footer: footer, token: token} =
           unquote(quoted_example)
 
-        assert V2.sign(payload, sk, footer) == token
+        assert V2.sign(payload, keypair, footer) == token
 
         {:ok, %Token{payload: signed_payload, footer: encoded_footer}} = Utils.parse_token(token)
 
-        assert V2.verify(signed_payload, pk, encoded_footer) == {:ok, payload}
+        assert V2.verify(signed_payload, keypair, encoded_footer) == {:ok, payload}
       end
     end
   end

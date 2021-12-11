@@ -10,7 +10,7 @@ defmodule Paseto do
   * footer: An optional value, often used for storing keyIDs or other similar info.
   """
 
-  alias Paseto.{Token, V1, V2, Utils}
+  alias Paseto.{Token, V1, V2, Utils, V2PublicKeyPair, V2LocalKey}
 
   @doc """
   """
@@ -78,8 +78,7 @@ defmodule Paseto do
             V1.decrypt(payload, key, footer)
 
           "public" ->
-            {pk, _sk} = key
-            V1.verify(payload, pk, footer)
+            V1.verify(payload, key, footer)
         end
 
       "v2" ->
@@ -88,8 +87,7 @@ defmodule Paseto do
             V2.decrypt(payload, key, footer)
 
           "public" ->
-            {pk, _sk} = key
-            V2.verify(payload, pk, footer)
+            V2.verify(payload, key, footer)
         end
     end
   end
@@ -119,16 +117,22 @@ defmodule Paseto do
   """
   @spec generate_token(String.t(), String.t(), String.t(), String.t()) ::
           {:ok, String.t()} | {:error, String.t()}
-  def generate_token(version, purpose, payload, secret_key, footer \\ "") do
+  def generate_token(
+        version,
+        purpose,
+        payload,
+        secret_key,
+        footer \\ ""
+      ) do
     _generate_token(version, purpose, payload, secret_key, footer)
   end
 
   @spec _generate_token(String.t(), String.t(), binary, String.t(), String.t()) ::
           {:ok, String.t()} | {:error, String.t()}
-  defp _generate_token(version, "public", payload, {_pk, sk}, footer) do
+  defp _generate_token(version, "public", payload, keypair, footer) do
     case String.downcase(version) do
-      "v2" -> V2.sign(payload, sk, footer)
-      "v1" -> V1.sign(payload, sk, footer)
+      "v2" -> V2.sign(payload, keypair, footer)
+      "v1" -> V1.sign(payload, keypair, footer)
       _ -> {:error, "Invalid version selected. Only v1 & v2 supported."}
     end
   end

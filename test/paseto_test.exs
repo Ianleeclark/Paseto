@@ -2,6 +2,8 @@ defmodule PasetoTest do
   use ExUnit.Case
   use ExUnitProperties
 
+  alias Paseto.{V2PublicKeyPair, V2LocalKey}
+
   alias Salty.Sign.Ed25519
 
   @public_exponent 65_537
@@ -29,11 +31,11 @@ defmodule PasetoTest do
       "v2" ->
         case purpose do
           "local" ->
-            :crypto.strong_rand_bytes(32)
+            V2LocalKey.new(:crypto.strong_rand_bytes(32))
 
           "public" ->
             {:ok, pk, sk} = Ed25519.keypair()
-            {pk, sk}
+            V2PublicKeyPair.new(pk, sk)
         end
     end
   end

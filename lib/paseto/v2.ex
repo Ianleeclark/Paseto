@@ -16,6 +16,8 @@ defmodule Paseto.V2 do
   alias Paseto.Utils.Crypto
   alias Salty.Sign.Ed25519
 
+  alias Paseto.{V2PublicKeyPair, V2LocalKey}
+
   import Paseto.Utils, only: [b64_decode!: 1]
 
   require Logger
@@ -25,6 +27,9 @@ defmodule Paseto.V2 do
 
   @enforce_keys @all_keys
   defstruct @all_keys
+
+  @key_len 32
+  @nonce_len 24
 
   @spec from_token(Token.t()) :: %__MODULE__{}
   def from_token(token) do
@@ -39,20 +44,17 @@ defmodule Paseto.V2 do
   @header_public "v2.public."
   @header_local "v2.local."
 
-  @key_len 32
-  @nonce_len 24
-
   @doc """
   Handles encrypting the payload and returning a valid token
 
   # Examples:
       iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188, 168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
-      iex> Paseto.V2.encrypt("This is a test message", key)
+      iex> Paseto.V2.encrypt("This is a test message", V2LocalKey.new(key))
       "v2.local.voHwaLKK64eSfnCGoJuxJvoyncIpDrg2AkFbRTBeOOBdytn8XoRtl_sRORjlGdTvPageE38TR7dVlv5wxw0"
   """
   @spec encrypt(String.t(), String.t(), String.t(), binary | nil) ::
           String.t() | {:error, String.t()}
-  def encrypt(data, key, footer \\ "", n \\ nil) do
+  def encrypt(data, %V2LocalKey{key: key, algorithm: :v2_local}, footer \\ "", n \\ nil) do
     aead_encrypt(data, key, footer, n || :crypto.strong_rand_bytes(@nonce_len))
   end
 
@@ -61,12 +63,12 @@ defmodule Paseto.V2 do
 
   # Examples:
       iex> key = <<56, 165, 237, 250, 173, 90, 82, 73, 227, 45, 166, 36, 121, 213, 122, 227, 188, 168, 248, 190, 39, 11, 243, 40, 236, 206, 123, 237, 189, 43, 220, 66>>
-      iex> Paseto.V2.decrypt("AUfxx2uuiOXEXnYlMCzesBUohpewQTQQURBonherEWHcRgnaJfMfZXCt96hciML5PN9ozels1bnPidmFvVc", key)
+      iex> Paseto.V2.decrypt("AUfxx2uuiOXEXnYlMCzesBUohpewQTQQURBonherEWHcRgnaJfMfZXCt96hciML5PN9ozels1bnPidmFvVc", V2LocalKey.new(key))
       {:ok, "This is a test message"}
   """
   @spec decrypt(String.t(), String.t(), String.t() | nil) ::
           {:ok, String.t()} | {:error, String.t()}
-  def decrypt(data, key, footer \\ "") do
+  def decrypt(data, %V2LocalKey{key: key, algorithm: :v2_local}, footer \\ "") do
     aead_decrypt(data, key, footer)
   end
 
@@ -75,11 +77,12 @@ defmodule Paseto.V2 do
 
   # Examples:
       iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
-      iex> Paseto.V2.sign("Test Message", sk)
+      iex> Paseto.V2.sign("Test Message", V2PublicKeyPair.new(pk, sk))
       "v2.public.VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE"
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
-  def sign(data, secret_key, footer \\ "") when byte_size(secret_key) == 64 do
+  def sign(data, %V2PublicKeyPair{secret_key: secret_key, algorithm: :v2_public}, footer \\ "")
+      when byte_size(secret_key) == 64 do
     pre_auth_encode = Utils.pre_auth_encode([@header_public, data, footer])
 
     {:ok, sig} = Ed25519.sign_detached(pre_auth_encode, secret_key)
@@ -94,13 +97,18 @@ defmodule Paseto.V2 do
 
   # Examples:
       iex> {:ok, pk, sk} = Salty.Sign.Ed25519.keypair()
-      iex> Paseto.V2.sign("Test Message", sk)
+      iex> Paseto.V2.sign("Test Message", V2PublicKeyPair.new(pk, sk))
       "v2.public.VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE"
-      iex> Paseto.V2.verify("VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE", pk)
+      iex> Paseto.V2.verify("VGVzdAJxQsXSrgYBkcwiOnWamiattqhhhNN_1jsY-LR_YbsoYpZ18-ogVSxWv7d8DlqzLSz9csqNtSzDk4y0JV5xaAE", V2PublicKeyPair.new(pk, sk))
       "{:ok, "Test"}"
   """
-  @spec verify(String.t(), [binary()], String.t() | nil) :: {:ok, binary} | {:error, String.t()}
-  def verify(signed_message, public_key, footer \\ "") do
+  @spec verify(String.t(), V2PublicKeyPair, String.t() | nil) ::
+          {:ok, binary} | {:error, String.t()}
+  def verify(
+        signed_message,
+        %V2PublicKeyPair{public_key: public_key, algorithm: :v2_public},
+        footer \\ ""
+      ) do
     decoded_footer = b64_decode!(footer)
     decoded_message = b64_decode!(signed_message)
 
