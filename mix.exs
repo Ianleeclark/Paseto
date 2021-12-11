@@ -35,7 +35,7 @@ defmodule Paseto.MixProject do
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:hkdf, "~> 0.1.0"},
       {:blake2, "~> 1.0"},
-      {:libsalty2, "~> 0.2.1"},
+      {:libsalty2, "~> 0.3.0"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:stream_data, "~> 0.5.0", only: :test}
