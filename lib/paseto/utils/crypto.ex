@@ -85,7 +85,7 @@ defmodule Paseto.Utils.Crypto do
   """
   @spec hmac_sha384(String.t(), String.t()) :: binary
   def hmac_sha384(key, data) do
-    :crypto.hmac(:sha384, key, data)
+    :crypto.mac(:hmac, :sha384, key, data)
   end
 
   @doc """
@@ -93,6 +93,6 @@ defmodule Paseto.Utils.Crypto do
   """
   @spec hmac_sha384(String.t(), String.t(), number) :: binary
   def hmac_sha384(key, data, trim_bytes) do
-    :crypto.hmac(:sha384, key, data, trim_bytes)
+    :crypto.mac(:hmac, :sha384, key, data, trim_bytes)
   end
 end
