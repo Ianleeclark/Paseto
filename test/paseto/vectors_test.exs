@@ -26,12 +26,13 @@ defmodule Paseto.VectorsTest do
 
     for {vector, quoted_example} <- Enum.map(vectors, &TestVectors.to_v1_public_example/1) do
       test vector do
-        %{pk: pk, payload: payload, footer: footer, token: token} = unquote(quoted_example)
+        %{keypair: keypair, payload: payload, footer: footer, token: token} =
+          unquote(quoted_example)
 
         {:ok, %Token{payload: signed_payload, footer: encoded_footer}} = Utils.parse_token(token)
 
         assert Utils.b64_decode!(encoded_footer) == footer
-        assert V1.verify(signed_payload, pk, encoded_footer) == {:ok, payload}
+        assert V1.verify(signed_payload, keypair, encoded_footer) == {:ok, payload}
       end
     end
   end

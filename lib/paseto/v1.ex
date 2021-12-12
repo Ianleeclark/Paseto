@@ -12,6 +12,8 @@ defmodule Paseto.V1 do
   alias Paseto.Utils
   alias Paseto.Utils.Crypto, as: PasetoCrypto
 
+  alias Paseto.{V1LocalKey, V1PublicKeyPair}
+
   import Paseto.Utils, only: [b64_decode: 1, b64_decode!: 1]
 
   @required_keys [:version, :purpose, :payload]
@@ -46,12 +48,12 @@ defmodule Paseto.V1 do
   Handles encrypting the payload and returning a valid token
 
   # Examples:
-      iex> Paseto.V1.encrypt("This is a test message", "Test Key")
+      iex> Paseto.V1.encrypt("This is a test message", V1LocalKey.new("Test Key"))
       "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
   """
   @spec encrypt(String.t(), String.t(), String.t(), binary | nil) ::
           String.t() | {:error, String.t()}
-  def encrypt(data, key, footer \\ "", n \\ nil) do
+  def encrypt(data, %V1LocalKey{key: key}, footer \\ "", n \\ nil) do
     aead_encrypt(data, key, footer, n || :crypto.strong_rand_bytes(@nonce_size))
   end
 
@@ -59,15 +61,15 @@ defmodule Paseto.V1 do
   Handles decrypting a token given the correct key
 
   # Examples:
-      iex> token = Paseto.V1.encrypt("This is a test message", "Test Key")
+      iex> token = Paseto.V1.encrypt("This is a test message", V1LocalKey.new("Test Key"))
       iex> token
       "v1.local.3qbJND5q6IbF7cZxxWjmSTaVyMo2M3LaEDJ8StdFXw8PTUo55YIyy2BhIaAN6m-IdbGmdwM_ud1IpOyrz3CysNIkjBjab7NLRPbksV-XIsWYRFX6r7z2jsIfH-8emAv_BVtXi9lY"
-      iex> Paseto.V1.decrypt(token, "Test Key")
+      iex> Paseto.V1.decrypt(token, V1LocalKey.new("Test Key"))
       "{:ok, "This is a test message"}"
   """
   @spec decrypt(String.t(), String.t(), String.t() | nil) ::
           {:ok, String.t()} | {:error, String.t()}
-  def decrypt(data, key, footer \\ "") do
+  def decrypt(data, %V1LocalKey{key: key}, footer \\ "") do
     aead_decrypt(data, @header_local, key, footer)
   end
 
@@ -76,11 +78,11 @@ defmodule Paseto.V1 do
 
   # Examples:
       iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
-      iex> Paseto.V1.sign("This is a test message!", secret_key)
+      iex> Paseto.V1.sign("This is a test message!", V1PublicKeyPair.new(public_key, secret_key))
       "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
   """
   @spec sign(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
-  def sign(data, public_key, footer \\ "") do
+  def sign(data, %V1PublicKeyPair{public_key: public_key}, footer \\ "") do
     m2 = Utils.pre_auth_encode([@header_public, data, footer])
 
     signature =
@@ -99,10 +101,10 @@ defmodule Paseto.V1 do
 
   # Examples:
       iex> {public_key, secret_key} = :crypto.generate_key(:rsa, {2048, 65_537})
-      iex> token = Paseto.V1.sign("This is a test message!", secret_key)
+      iex> token = Paseto.V1.sign("This is a test message!", V1PublicKeyPair.new(public_key, secret_key))
       "v1.public.VGhpcyBpcyBhIHRlc3QgbWVzc2FnZSGswqHiZVv31r99PZphr2hqJQe81Qc_7XkxHyVb_7-xORKp-VFJdEiqfINgLnwxo8n1pkIDH4_9UfhpEyS1ivgxfYe-55INfV-OyzSpHMbuGA0xviIln0fdn98QljGwh3uDFduXnfaWeBYA6nE0JingWEvVG-V8L12IdFh1rq9ZWLleFVsn719Iz8BqsasmFAICLRpnToL7X1syHdZ6PjhBnStCM5GHHzCwbdvj64P5QqxvtUzTfXBBeC-IKu_HVxIxY9VaN3d3KQotBZ1J6W1oJ4cX0JvUR4pIaq3eKfOKdoR5fUkyjS0mP9GjjoJcW8oiKKqb3dAaCHZW9he2iZNn"
       iex> [version, purpose, payload] = String.split(token, ".")
-      iex> V1.verify(version <> "." <> purpose <> ".", payload, public_key)
+      iex> V1.verify(version <> "." <> purpose <> ".", payload, V1PublicKeyPair.new(public_key, secret_key))
       "{:ok, "This is a test message!"}"
   """
   @spec verify(
@@ -110,7 +112,7 @@ defmodule Paseto.V1 do
           [binary()],
           String.t() | nil
         ) :: {:ok, binary} | {:error, binary()}
-  def verify(signed_message, [_exp, mod] = public_key, footer \\ "")
+  def verify(signed_message, %V1PublicKeyPair{public_key: [_exp, mod] = public_key}, footer \\ "")
       when byte_size(mod) == 256 do
     with {:ok, decoded} <- valid_b64?(:decode, signed_message),
          {:ok, decoded_footer} <- b64_decode(footer) do

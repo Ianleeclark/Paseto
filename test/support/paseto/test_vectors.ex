@@ -1,7 +1,7 @@
 defmodule Paseto.TestVectors do
   @moduledoc false
 
-  alias Paseto.{V2LocalKey, V2PublicKeyPair}
+  alias Paseto.{V2LocalKey, V2PublicKeyPair, V1LocalKey, V1PublicKeyPair}
 
   def load(fixture_file) do
     fixture_file
@@ -15,9 +15,11 @@ defmodule Paseto.TestVectors do
     payload = vector_spec[:payload]
 
     key =
-      vector_spec
-      |> Keyword.fetch!(:key)
-      |> parse_hex()
+      V1LocalKey.new(
+        vector_spec
+        |> Keyword.fetch!(:key)
+        |> parse_hex()
+      )
 
     nonce =
       case Keyword.fetch(vector_spec, :nonce) do
@@ -74,9 +76,11 @@ defmodule Paseto.TestVectors do
       |> String.trim()
       |> Paseto.RSAPublicKey.decode()
 
+    keypair = V1PublicKeyPair.new(pk, "fake secret key")
+
     footer = Keyword.get(vector_spec, :footer, "")
 
-    example = %{pk: pk, payload: payload, footer: footer, token: token}
+    example = %{keypair: keypair, payload: payload, footer: footer, token: token}
 
     {vector, Macro.escape(example)}
   end

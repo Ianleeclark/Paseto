@@ -2,7 +2,7 @@ defmodule PasetoTest do
   use ExUnit.Case
   use ExUnitProperties
 
-  alias Paseto.{V2PublicKeyPair, V2LocalKey}
+  alias Paseto.{V2PublicKeyPair, V2LocalKey, V1PublicKeyPair, V1LocalKey}
 
   alias Salty.Sign.Ed25519
 
@@ -24,8 +24,8 @@ defmodule PasetoTest do
     case version do
       "v1" ->
         case purpose do
-          "local" -> "test key"
-          "public" -> :crypto.generate_key(:rsa, {2048, @public_exponent})
+          "local" -> V1LocalKey.new("test key")
+          "public" -> V1PublicKeyPair.new(:crypto.generate_key(:rsa, {2048, @public_exponent}))
         end
 
       "v2" ->
