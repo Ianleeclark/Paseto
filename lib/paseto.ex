@@ -46,7 +46,7 @@ defmodule Paseto do
           version: "v2"
         }}
   """
-  @spec parse_token(String.t(), binary()) :: {:ok, %Token{}} | {:error, String.t()}
+  @spec parse_token(String.t(), binary()) :: {:ok, Token} | {:error, String.t()}
   def parse_token(token, key) do
     with {:ok, %Token{version: version, purpose: purpose, payload: payload, footer: footer}} <-
            Utils.parse_token(token),

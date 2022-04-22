@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: grappigpanda/elixir-libsodium:1.9_otp23
+      - image: grappigpanda/elixir-libsodium:1.13_otp24
         environment:
           MIX_ENV: test
 
@@ -18,15 +18,10 @@ jobs:
           keys:
             - v1-build-cache-{{ .Branch }}
             - v1-build-cache
-      - restore_cache:
-          keys:
-            - v4-plt-cache-{{ checksum ".tool-versions" }}
-            - v4-plt-cache
 
       - run: mix do deps.get --only test, compile
       - run: mix test
       - run: mix credo
-      - run: mix dialyzer --halt-exit-status
 
       - save_cache:
           key: v1-mix-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
@@ -43,11 +38,3 @@ jobs:
       - save_cache:
           key: v1-build-cache
           paths: "_build"
-      - save_cache:
-          key: v4-plt-cache-{{ checksum ".tool-versions" }}
-          paths:
-            - ./priv/plts
-      - save_cache:
-          key: v4-plt-cache
-          paths:
-            - ./priv/plts

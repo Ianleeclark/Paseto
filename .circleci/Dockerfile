@@ -1,4 +1,4 @@
-FROM erlang:23-alpine
+FROM erlang:24-alpine
 
 #
 # Largely copied from https://github.com/c0b/docker-elixir, but modified to
@@ -6,7 +6,7 @@ FROM erlang:23-alpine
 #
 
 # elixir expects utf8.
-ENV ELIXIR_VERSION="v1.9.4" \
+ENV ELIXIR_VERSION="v1.13" \
 LANG=C.UTF-8
 
 RUN set -xe \

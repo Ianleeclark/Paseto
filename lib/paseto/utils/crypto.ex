@@ -38,9 +38,7 @@ defmodule Paseto.Utils.Crypto do
   def xchacha20_poly1305_encrypt(_message, _aad, nonce, key)
       when byte_size(nonce) != 24 and byte_size(key) != 32 do
     {:error,
-     "Invalid key/nonce for xchacha. Expected 32/24 bytes, got #{byte_size(key)}/#{
-       byte_size(nonce)
-     }, respectively."}
+     "Invalid key/nonce for xchacha. Expected 32/24 bytes, got #{byte_size(key)}/#{byte_size(nonce)}, respectively."}
   end
 
   def xchacha20_poly1305_encrypt(message, aad, nonce, key)
@@ -67,9 +65,7 @@ defmodule Paseto.Utils.Crypto do
   def xchacha20_poly1305_decrypt(_message, _aad, nonce, key)
       when byte_size(nonce) != 24 and byte_size(key) != 32 do
     {:error,
-     "Invalid key/nonce for xchacha. Expected 32/24 bytes, got #{byte_size(key)}/#{
-       byte_size(nonce)
-     }, respectively."}
+     "Invalid key/nonce for xchacha. Expected 32/24 bytes, got #{byte_size(key)}/#{byte_size(nonce)}, respectively."}
   end
 
   def xchacha20_poly1305_decrypt(message, aad, nonce, key)
@@ -85,7 +81,7 @@ defmodule Paseto.Utils.Crypto do
   """
   @spec hmac_sha384(String.t(), String.t()) :: binary
   def hmac_sha384(key, data) do
-    :crypto.hmac(:sha384, key, data)
+    :crypto.mac(:hmac, :sha384, key, data)
   end
 
   @doc """
@@ -93,6 +89,6 @@ defmodule Paseto.Utils.Crypto do
   """
   @spec hmac_sha384(String.t(), String.t(), number) :: binary
   def hmac_sha384(key, data, trim_bytes) do
-    :crypto.hmac(:sha384, key, data, trim_bytes)
+    :crypto.macN(:hmac, :sha384, key, data, trim_bytes)
   end
 end
