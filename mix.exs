@@ -4,7 +4,7 @@ defmodule Paseto.MixProject do
   def project do
     [
       app: :paseto,
-      version: "1.3.2",
+      version: "1.4.0",
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
