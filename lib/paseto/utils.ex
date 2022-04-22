@@ -93,7 +93,7 @@ defmodule Paseto.Utils do
       iex> Paseto.Utils.parse_token("v2.public")
       {:error, "Invalid token format"}
   """
-  @spec parse_token(String.t()) :: {:ok, %Paseto.Token{}} | {:error, String.t()}
+  @spec parse_token(String.t()) :: {:ok, Paseto.Token} | {:error, String.t()}
   def parse_token(token) when is_binary(token) do
     case String.split(token, ".") do
       [version, purpose, payload]

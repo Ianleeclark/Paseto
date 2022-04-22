@@ -12,13 +12,6 @@ defmodule Paseto.MixProject do
       deps: deps(),
       description: description(),
       package: package(),
-      dialyzer: [
-        ignore_warnings: ".dialyzer_ignore.exs",
-        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
-        # We're adding `public_key` here as the erlang env this
-        # is running in doesn't, by default, have it included.
-        plt_add_apps: [:public_key]
-      ],
       # Make sure that `testall` always runs under `MIX_ENV=test`
       preferred_cli_env: [testall: :test]
     ]
@@ -37,7 +30,6 @@ defmodule Paseto.MixProject do
       {:blake2, "~> 1.0"},
       {:libsalty2, "~> 0.3.0"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:stream_data, "~> 0.5.0", only: :test}
     ]
   end
